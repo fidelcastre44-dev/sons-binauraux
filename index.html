@@ -213,6 +213,7 @@
   @media (prefers-reduced-motion: reduce) { .ring-fill { transition: none; } }
 </style>
 
+<audio id="bgAudio" playsinline hidden></audio>
 <div class="wrap">
   <section class="stage" aria-label="Séance">
     <div class="brand">Sons binauraux</div>
@@ -338,7 +339,7 @@
 
     <div class="note">
       <strong>Au casque.</strong> L'effet binaural demande un son séparé pour chaque oreille ; la nappe et les textures fonctionnent aussi sur enceintes.
-      Sur iPhone, désactive le mode silencieux et garde l'écran allumé : Safari coupe le son quand l'écran se verrouille.
+      Sur iPhone, le son continue écran verrouillé et se pilote depuis l'écran de verrouillage ; si ce n'est pas le cas sur ta version d'iOS, garde l'écran allumé.
       Pratique de relaxation sans effet médical garanti. Pas en conduisant ni pendant une activité qui demande de la vigilance.
     </div>
     <div class="stats" id="stats"></div>
@@ -509,7 +510,15 @@
     shelf.type = "highshelf"; shelf.frequency.value = 7000; shelf.gain.value = -4;
     const lim = ctx.createDynamicsCompressor();
     lim.threshold.value = -10; lim.knee.value = 8; lim.ratio.value = 8; lim.attack.value = 0.005; lim.release.value = 0.25;
-    G.master.connect(shelf).connect(lim).connect(ctx.destination);
+    G.master.connect(shelf).connect(lim);
+    G.out = lim;
+    // iOS : session audio de type lecture (continue en arrière-plan, ignore le mode silencieux quand c'est supporté)
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    ctx.addEventListener("statechange", () => {
+      // iOS peut interrompre le contexte (appel, verrouillage) : on relance si la séance n'est pas en pause volontaire.
+      if (S && !S.userPaused && ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
+      renderTransport();
+    });
 
     G.revIn = ctx.createGain();
     const pre = ctx.createDelay(0.2); pre.delayTime.value = 0.035;
@@ -866,29 +875,85 @@
   }
   function releaseWake() { try { if (wakeLock) wakeLock.release(); } catch (e) {} wakeLock = null; }
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && S && !S.ending && ctx.state === "running") requestWake();
+    if (document.visibilityState !== "visible" || !S) return;
+    if (!S.userPaused && ctx.state !== "running") ctx.resume().catch(() => {});
+    if (!S.ending && !S.userPaused) requestWake();
+    const el = $("bgAudio");
+    if (G.routed === "stream" && !S.userPaused && el.paused) el.play().catch(() => {});
   });
+
+  // Sortie audio : on fait passer le son par un vrai lecteur <audio>, que iOS laisse tourner écran verrouillé.
+  // Si ce lecteur refuse de jouer, on revient à la sortie Web Audio directe.
+  function routeOutput() {
+    const el = $("bgAudio");
+    if (G.routed === "stream") { el.play().catch(() => {}); return; }
+    if (G.routed === "direct") return;
+    if (!ctx.createMediaStreamDestination || !el || typeof el.play !== "function") { G.out.connect(ctx.destination); G.routed = "direct"; return; }
+    try {
+      G.stream = ctx.createMediaStreamDestination();
+      G.out.connect(G.stream);
+      el.srcObject = G.stream.stream;
+      G.routed = "pending";
+      el.play().then(() => { G.routed = "stream"; }).catch(() => {
+        try { G.out.disconnect(G.stream); } catch (e) {}
+        G.out.connect(ctx.destination);
+        G.routed = "direct";
+      });
+    } catch (e) {
+      G.out.connect(ctx.destination);
+      G.routed = "direct";
+    }
+  }
+
+  // Écran de verrouillage et centre de contrôle
+  function updateMediaSession() {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      const title = state.journey === "custom" ? "Séance personnalisée" : JOURNEYS[state.journey].label;
+      navigator.mediaSession.metadata = new MediaMetadata({ title: title, artist: "Sons binauraux", album: MOODS[state.mood].label });
+      navigator.mediaSession.playbackState = !S ? "none" : (S.userPaused ? "paused" : "playing");
+    } catch (e) {}
+  }
+  if ("mediaSession" in navigator) {
+    const handle = (action, fn) => { try { navigator.mediaSession.setActionHandler(action, fn); } catch (e) {} };
+    handle("play", () => { if (!S) start(); else if (S.userPaused) togglePause(); });
+    handle("pause", () => { if (S && !S.userPaused) togglePause(); });
+    handle("stop", () => { if (S) endSession(false); });
+  }
 
   function start() {
     if (!ctx) initAudio();
+    routeOutput();
     if (ctx.state === "suspended") ctx.resume();
     buildSession();
     if (state.gongs) gong(ctx.currentTime + 0.15, 0.55);
     requestWake();
+    updateMediaSession();
     setStatus("En cours · " + (state.journey === "custom" ? "séance personnalisée" : JOURNEYS[state.journey].label));
     renderTransport();
   }
 
   function togglePause() {
     if (!S || S.ending) return;
-    if (ctx.state === "running") { ctx.suspend(); releaseWake(); setStatus("En pause"); }
-    else { ctx.resume(); requestWake(); setStatus("En cours"); }
+    const el = $("bgAudio");
+    if (!S.userPaused) {
+      S.userPaused = true;
+      ctx.suspend(); releaseWake(); setStatus("En pause");
+      if (G.routed === "stream") el.pause();
+    } else {
+      S.userPaused = false;
+      if (G.routed === "stream") el.play().catch(() => {});
+      ctx.resume(); requestWake(); setStatus("En cours");
+    }
+    updateMediaSession();
     setTimeout(renderTransport, 50);
   }
 
   function endSession(natural) {
     if (!S || S.ending) return;
-    if (ctx.state === "suspended") ctx.resume();
+    S.userPaused = false;
+    if (ctx.state !== "running") ctx.resume().catch(() => {});
+    if (G.routed === "stream") $("bgAudio").play().catch(() => {});
     S.ending = true;
     S.endedAt = Math.min(ctx.currentTime - S.t0, S.dur);
     const now = ctx.currentTime;
@@ -911,6 +976,8 @@
     recordStats(S.endedAt != null ? S.endedAt : ctx.currentTime - S.t0);
     S = null;
     releaseWake();
+    if (G.routed === "stream") { try { $("bgAudio").pause(); } catch (e) {} }
+    updateMediaSession();
     setStatus("Séance terminée");
     renderTransport();
     renderReadout();
@@ -1056,7 +1123,7 @@
   const PLAY = '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/>';
   const PAUSE = '<rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/>';
   function renderTransport() {
-    const running = S && !S.ending && ctx.state === "running";
+    const running = S && !S.ending && !S.userPaused;
     $("playIcon").innerHTML = running ? PAUSE : PLAY;
     $("playBtn").setAttribute("aria-label", !S ? "Démarrer la séance" : running ? "Mettre en pause" : "Reprendre");
     $("stopBtn").hidden = !S;
