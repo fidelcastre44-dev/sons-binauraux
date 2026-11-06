@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Sons binauraux</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Karla:wght@400;500;600&display=swap">
+<style>
+  /* Layout : la scène (orbe, minuteur, lecture) reste collée à gauche sur grand écran, les réglages défilent à droite ; une seule colonne sur téléphone. */
+  :root {
+    --night: #0a0e16;
+    --glow: #16203a;
+    --deep: #121827;
+    --deep-2: #182033;
+    --line: #252e43;
+    --ink: #ebe5d6;
+    --mist: #8f98ad;
+    --moon: #d8c398;
+    --moon-soft: rgba(216, 195, 152, 0.13);
+    --tide: #79a3b6;
+    --ember: #d48a70;
+    --display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+    --ui: "Karla", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  html, body { background: var(--night); }
+  body {
+    color: var(--ink);
+    font-family: var(--ui);
+    font-size: 15px;
+    line-height: 1.45;
+    background: radial-gradient(ellipse 90% 55% at 50% -8%, var(--glow) 0%, transparent 70%), var(--night);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  button { font: inherit; color: inherit; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--moon); outline-offset: 2px; }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 18px 48px;
+    display: grid;
+    gap: 28px;
+  }
+  @media (min-width: 900px) {
+    .wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; padding-block: 32px 64px; }
+    .stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); }
+  }
+
+  /* --- Scène --- */
+  .stage { display: grid; justify-items: center; gap: 10px; text-align: center; min-width: 0; }
+  .brand {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--moon);
+  }
+  .journey-name {
+    font-family: var(--display);
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--mist);
+    margin-top: -4px;
+  }
+  .orb { position: relative; width: min(80vw, 360px); max-width: 100%; aspect-ratio: 1; margin-top: 4px; }
+  .orb canvas, .orb svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .orb svg { transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: var(--line); stroke-width: 1.2; }
+  .ring-fill { fill: none; stroke: var(--moon); stroke-width: 1.6; stroke-linecap: round; transition: stroke-dashoffset 0.4s linear; }
+  .breath {
+    position: absolute; inset: 0;
+    display: grid; place-content: center; gap: 2px;
+    pointer-events: none;
+  }
+  .breath .word {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.85rem;
+    color: var(--night);
+    line-height: 1;
+  }
+  .breath .count { font-size: 0.8rem; font-weight: 600; color: var(--night); opacity: 0.6; font-variant-numeric: tabular-nums; min-height: 1.2em; }
+  .timer {
+    font-family: var(--display);
+    font-size: 3.4rem;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    font-variant-numeric: lining-nums tabular-nums;
+    margin-top: 2px;
+  }
+  .readout { font-size: 0.85rem; color: var(--mist); min-height: 1.3em; font-variant-numeric: tabular-nums; }
+  .readout b { color: var(--moon); font-weight: 500; }
+  .controls { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 8px; min-height: 78px; }
+  .btn-round {
+    border-radius: 50%;
+    display: grid; place-items: center;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--deep);
+  }
+  .btn-round svg { width: 22px; height: 22px; fill: currentColor; }
+  .btn-play { width: 78px; height: 78px; border: none; background: var(--moon); color: var(--night); box-shadow: 0 0 40px rgba(216, 195, 152, 0.25); }
+  .btn-play svg { width: 28px; height: 28px; }
+  .btn-play:active { transform: scale(0.96); }
+  .btn-stop { width: 52px; height: 52px; color: var(--ember); }
+  .volume { display: grid; grid-template-columns: auto minmax(0, 1fr) 2.6em; align-items: center; gap: 10px; width: min(100%, 300px); margin-top: 6px; color: var(--mist); font-size: 0.8rem; }
+  .volume b { color: var(--ink); font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+  .status { font-size: 0.78rem; color: var(--mist); min-height: 1.2em; }
+
+  /* --- Voyages --- */
+  .journeys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin-top: 14px; }
+  .journey {
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--deep);
+    cursor: pointer;
+    min-height: 58px;
+    display: grid; align-content: center; gap: 1px;
+  }
+  .journey .n { font-family: var(--display); font-size: 1.1rem; overflow-wrap: anywhere; font-weight: 500; line-height: 1.1; }
+  .journey .s { font-size: 0.7rem; color: var(--mist); }
+  .journey[aria-pressed="true"] { border-color: var(--moon); background: var(--moon-soft); }
+  .journey[aria-pressed="true"] .n { color: var(--moon); }
+  .journey.custom { border-style: dashed; cursor: default; }
+  @media (max-width: 380px) { .journeys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* --- Panneaux --- */
+  .panels { display: grid; gap: 14px; min-width: 0; }
+  .panel {
+    background: var(--deep);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px 18px 20px;
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+  }
+  .panel h2 { font-family: var(--display); font-weight: 500; font-size: 1.55rem; line-height: 1.1; margin: 0; text-wrap: balance; }
+  .lede { color: var(--mist); font-size: 0.85rem; line-height: 1.5; margin: -8px 0 0; max-width: 60ch; }
+  .group-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mist); margin-bottom: -4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    min-height: 44px;
+    padding: 7px 13px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--deep-2);
+    font-size: 0.88rem;
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.2;
+  }
+  .chip small { display: block; color: var(--mist); font-size: 0.7rem; }
+  .chip[aria-pressed="true"] { border-color: var(--moon); background: var(--moon-soft); color: var(--moon); }
+  .chip[aria-pressed="true"] small { color: var(--moon); opacity: 0.75; }
+
+  .field { display: grid; gap: 0; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 0.86rem; color: var(--mist); }
+  .field-head b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hint { font-size: 0.75rem; color: var(--mist); opacity: 0.85; margin-top: -2px; }
+
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 36px; background: transparent; cursor: pointer; margin: 0; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: var(--line); }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--moon); margin-top: -9.5px; border: 3px solid var(--deep); }
+  input[type="range"]::-moz-range-track { height: 3px; border-radius: 2px; background: var(--line); }
+  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--moon); border: 3px solid var(--deep); }
+
+  .mixer { display: grid; gap: 2px; }
+  .mix-row { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) 2.6em; align-items: center; gap: 10px; font-size: 0.86rem; }
+  .mix-row label { color: var(--mist); }
+  .mix-row b { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .switch-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; font-size: 0.88rem; }
+  .switch-row span small { display: block; color: var(--mist); font-size: 0.75rem; }
+  .toggle { position: relative; width: 50px; height: 30px; border-radius: 15px; border: 1px solid var(--line); background: var(--deep-2); cursor: pointer; flex-shrink: 0; }
+  .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--mist); transition: transform 0.2s, background 0.2s; }
+  .toggle[aria-pressed="true"] { background: var(--moon-soft); border-color: var(--moon); }
+  .toggle[aria-pressed="true"]::after { transform: translateX(20px); background: var(--moon); }
+
+  .num { display: flex; align-items: center; gap: 8px; color: var(--mist); font-size: 0.85rem; }
+  .num input { width: 72px; min-height: 44px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--deep-2); color: var(--ink); font: inherit; text-align: center; font-variant-numeric: tabular-nums; }
+
+  .note {
+    font-size: 0.78rem;
+    color: var(--mist);
+    line-height: 1.55;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+  }
+  .note strong { color: var(--ink); font-weight: 600; }
+  .credits a { color: var(--moon); }
+  .stats { font-family: var(--display); font-style: italic; font-size: 1.05rem; color: var(--mist); text-align: center; padding: 4px 0; }
+
+  @media (prefers-reduced-motion: reduce) { .ring-fill { transition: none; } }
+</style>
+
+<div class="wrap">
+  <section class="stage" aria-label="Séance">
+    <div class="brand">Sons binauraux</div>
+    <div class="journey-name" id="journeyName">Méditation</div>
+
+    <div class="orb">
+      <canvas id="orb" aria-hidden="true"></canvas>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="ring-track" cx="50" cy="50" r="48.5"></circle>
+        <circle class="ring-fill" id="ringFill" cx="50" cy="50" r="48.5"></circle>
+      </svg>
+      <div class="breath" aria-live="polite">
+        <span class="word" id="breathWord">Prêt</span>
+        <span class="count" id="breathCount"></span>
+      </div>
+    </div>
+
+    <div class="timer" id="timer">20:00</div>
+    <div class="readout" id="readout"></div>
+
+    <div class="controls">
+      <button class="btn-round btn-stop" id="stopBtn" aria-label="Arrêter la séance" hidden>
+        <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+      <button class="btn-round btn-play" id="playBtn" aria-label="Démarrer la séance">
+        <svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>
+      </button>
+    </div>
+    <div class="status" id="status">Casque conseillé</div>
+
+    <div class="volume">
+      <label for="volume">Volume</label>
+      <input type="range" id="volume" min="0" max="100" step="1" value="60">
+      <b id="volumeVal">60</b>
+    </div>
+
+    <div class="journeys" id="journeys" role="group" aria-label="Voyages"></div>
+  </section>
+
+  <section class="panels">
+    <div class="panel">
+      <h2>Paysage sonore</h2>
+      <p class="lede">Une harmonie lente se construit sur la fréquence de base, avec des carillons qui apparaissent au hasard et des enregistrements de nature en fond.</p>
+
+      <div class="group-label">Harmonie</div>
+      <div class="chips" id="moods" role="group" aria-label="Harmonie"></div>
+      <div class="hint" id="moodHint"></div>
+
+      <div class="group-label">Sons de la nature</div>
+      <div class="chips" id="textures" role="group" aria-label="Sons de la nature"></div>
+      <div class="hint">Vrais enregistrements, à superposer librement. Le niveau se règle dans le mélange.</div>
+
+      <div class="field">
+        <div class="field-head"><label for="clarity">Clarté de la nappe</label><b id="clarityVal"></b></div>
+        <input type="range" id="clarity" min="0" max="100" step="1" value="50">
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="evolution">Durée de chaque accord</label><b id="evolutionVal"></b></div>
+        <input type="range" id="evolution" min="15" max="90" step="1" value="30">
+      </div>
+
+      <div class="group-label">Mélange</div>
+      <div class="mixer" id="mixer"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Fréquences</h2>
+      <p class="lede">L'oreille gauche entend la base, la droite la base plus l'écart. La séance part de l'écart de départ et glisse vers la cible.</p>
+
+      <div class="field">
+        <div class="field-head"><label for="base">Fréquence de base</label><b id="baseVal"></b></div>
+        <input type="range" id="base" min="60" max="400" step="1" value="136">
+        <div class="hint" id="baseNote"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-head"><label for="beat">Écart visé</label><b id="beatVal"></b></div>
+        <input type="range" id="beat" min="0.5" max="40" step="0.5" value="6">
+      </div>
+      <div class="chips" id="bands" role="group" aria-label="Bandes"></div>
+
+      <div class="field">
+        <div class="field-head"><label for="beatStart">Écart de départ</label><b id="beatStartVal"></b></div>
+        <input type="range" id="beatStart" min="0.5" max="40" step="0.5" value="10">
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="ramp">Durée de la transition</label><b id="rampVal"></b></div>
+        <input type="range" id="ramp" min="0" max="20" step="1" value="8">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Respiration</h2>
+      <p class="lede">L'orbe guide le souffle. La nappe peut gonfler à l'inspiration et se retirer à l'expiration.</p>
+      <div class="chips" id="breaths" role="group" aria-label="Rythme respiratoire"></div>
+      <div class="switch-row">
+        <span>La nappe suit le souffle<small>Variation douce du volume de la nappe</small></span>
+        <button class="toggle" id="breathFollow" aria-pressed="true" aria-label="La nappe suit le souffle"></button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Séance</h2>
+      <div class="chips" id="durations" role="group" aria-label="Durée"></div>
+      <div class="num">
+        <label for="durationCustom">Autre durée</label>
+        <input type="number" id="durationCustom" min="1" max="180" step="1" value="20" inputmode="numeric">
+        <span>min</span>
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="fadeIn">Montée du son</label><b id="fadeInVal"></b></div>
+        <input type="range" id="fadeIn" min="3" max="60" step="1" value="15">
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="fadeOut">Extinction en fin de séance</label><b id="fadeOutVal"></b></div>
+        <input type="range" id="fadeOut" min="5" max="90" step="1" value="25">
+      </div>
+      <div class="switch-row">
+        <span>Cloches de début et de fin<small>Un gong grave ouvre et ferme la séance</small></span>
+        <button class="toggle" id="gongs" aria-pressed="true" aria-label="Cloches de début et de fin"></button>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Au casque.</strong> L'effet binaural demande un son séparé pour chaque oreille ; la nappe et les textures fonctionnent aussi sur enceintes.
+      Sur iPhone, désactive le mode silencieux et garde l'écran allumé : Safari coupe le son quand l'écran se verrouille.
+      Pratique de relaxation sans effet médical garanti. Pas en conduisant ni pendant une activité qui demande de la vigilance.
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="note credits">
+      <strong>Sons de la nature.</strong> Enregistrements issus du projet libre Blanket, retravaillés en boucles.
+      Pluie : alex36917 (CC BY) · Orage : Digifish music (CC BY) · Vagues : Luftrum (CC BY) · Ruisseau : gluckose (CC0) ·
+      Vent : felix.blume (CC0) · Oiseaux : kvgarlic (CC0) · Nuit d'été : Lisa Redfern (domaine public) · Feu de bois : ezwa (domaine public).
+      Montages de Porrumentzio. <a href="https://github.com/rafaelmardojai/blanket/blob/master/SOUNDS_LICENSING.md" target="_blank" rel="noopener">Sources et licences</a>.
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ============ Données ============
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const fmt1 = (v) => String(Math.round(v * 10) / 10).replace(".", ",");
+
+  // Accords en demi-tons depuis la tonique ; la première valeur est la fondamentale de l'accord.
+  const MOODS = {
+    aube: { label: "Aube", sub: "majeur lumineux", hint: "Lydien : ouvert, clair, plein d'air.",
+      cutoff: 1900, scale: [0, 2, 4, 7, 9, 11, 12, 14, 16, 19],
+      bell: { ratio: 3.0, index: 1.0, decay: 4, oct: 2, mean: 4.5 },
+      chords: [ { n: "I maj9", o: [0, 7, 11, 14, 16] }, { n: "II add9", o: [2, 6, 9, 14, 18] },
+                { n: "vi 9", o: [-3, 4, 7, 11, 14] }, { n: "IV maj7", o: [5, 9, 12, 16, 19] } ] },
+    nuit: { label: "Nuit", sub: "mineur enveloppant", hint: "Éolien : sombre, chaud, protecteur.",
+      cutoff: 1200, scale: [0, 3, 5, 7, 10, 12, 15, 17, 19],
+      bell: { ratio: 1.41, index: 1.8, decay: 6.5, oct: 1, mean: 6.5 },
+      chords: [ { n: "i m9", o: [0, 7, 10, 14, 15] }, { n: "♭VI maj9", o: [-4, 0, 3, 7, 10] },
+                { n: "iv m9", o: [5, 8, 12, 15, 19] }, { n: "♭VII sus2", o: [-2, 5, 10, 12, 17] } ] },
+    brume: { label: "Brume", sub: "suspendu", hint: "Quartes et accords suspendus : rien ne se résout.",
+      cutoff: 1500, scale: [0, 2, 5, 7, 9, 12, 14, 17, 19],
+      bell: { ratio: 2.0, index: 0.8, decay: 5, oct: 2, mean: 5.5 },
+      chords: [ { n: "sus2", o: [0, 7, 14, 19, 24] }, { n: "quartes", o: [0, 5, 10, 15, 19] },
+                { n: "♭VII sus2", o: [-2, 5, 12, 14, 19] }, { n: "add9", o: [0, 7, 12, 14, 21] } ] },
+    abysse: { label: "Abysse", sub: "drone profond", hint: "Quintes tenues très graves, mouvement minimal.",
+      cutoff: 950, scale: [0, 7, 10, 12, 14, 19],
+      bell: { ratio: 3.5, index: 1.4, decay: 9, oct: 1, mean: 11 },
+      chords: [ { n: "quinte", o: [0, 7, 12, 19, 24] }, { n: "sus4", o: [0, 5, 12, 17, 24] },
+                { n: "♭VII", o: [-2, 5, 10, 14, 22] } ] }
+  };
+
+  // Enregistrements réels (via le projet libre Blanket) — licences et auteurs listés en bas de page.
+  const TEXTURES = {
+    rain: { label: "Pluie", sub: "averse douce" },
+    storm: { label: "Orage", sub: "tonnerre lointain" },
+    waves: { label: "Vagues", sub: "ressac" },
+    stream: { label: "Ruisseau", sub: "eau vive" },
+    wind: { label: "Vent", sub: "souffle" },
+    birds: { label: "Oiseaux", sub: "forêt au matin" },
+    "summer-night": { label: "Nuit d'été", sub: "grillons" },
+    fireplace: { label: "Feu de bois", sub: "crépitements" }
+  };
+
+  const BREATHS = {
+    off: { label: "Libre", sub: "sans guide", seq: null },
+    coherence: { label: "Cohérence", sub: "5,5 · 5,5", seq: [["in", 5.5], ["out", 5.5]] },
+    relax: { label: "Apaisement", sub: "4 · 6", seq: [["in", 4], ["out", 6]] },
+    carre: { label: "Carré", sub: "4 · 4 · 4 · 4", seq: [["in", 4], ["hold", 4], ["out", 4], ["rest", 4]] },
+    sommeil: { label: "4-7-8", sub: "endormissement", seq: [["in", 4], ["hold", 7], ["out", 8]] }
+  };
+  const BREATH_WORDS = { in: "Inspire", hold: "Retiens", out: "Expire", rest: "Pause" };
+
+  const BANDS = [
+    { label: "Delta", sub: "sommeil", v: 2.5, max: 4 },
+    { label: "Thêta", sub: "méditation", v: 6, max: 8 },
+    { label: "Alpha", sub: "détente", v: 10, max: 13 },
+    { label: "Bêta", sub: "attention", v: 16, max: 30 },
+    { label: "Gamma", sub: "éveil", v: 40, max: 99 }
+  ];
+  const bandOf = (b) => BANDS.find((x) => b < x.max) || BANDS[4];
+
+  const MIX = [
+    { k: "bin", label: "Binaural", K: 0.42 },
+    { k: "pad", label: "Nappe", K: 1.0 },
+    { k: "halo", label: "Halo", K: 0.9 },
+    { k: "bass", label: "Basse", K: 0.85 },
+    { k: "bell", label: "Carillons", K: 0.75 },
+    { k: "tex", label: "Nature", K: 1.6 }
+  ];
+
+  const JOURNEYS = {
+    sommeil: { label: "Sommeil", sub: "Delta · 45 min", mood: "nuit", textures: ["rain"], base: 90, beatStart: 8, beat: 2.5, ramp: 15, duration: 45, breath: "sommeil", evolution: 50, clarity: 35, fadeOut: 60,
+      mix: { bin: 50, pad: 60, halo: 22, bass: 35, bell: 12, tex: 40 } },
+    meditation: { label: "Méditation", sub: "Thêta · 20 min", mood: "brume", textures: ["waves"], base: 136, beatStart: 10, beat: 6, ramp: 8, duration: 20, breath: "coherence", evolution: 32, clarity: 50, fadeOut: 25,
+      mix: { bin: 60, pad: 55, halo: 35, bass: 30, bell: 30, tex: 30 } },
+    detente: { label: "Détente", sub: "Alpha · 15 min", mood: "aube", textures: ["waves", "birds"], base: 110, beatStart: 12, beat: 10, ramp: 4, duration: 15, breath: "relax", evolution: 26, clarity: 60, fadeOut: 20,
+      mix: { bin: 60, pad: 55, halo: 40, bass: 25, bell: 38, tex: 35 } },
+    focus: { label: "Focus", sub: "Bêta · 45 min", mood: "aube", textures: ["rain"], base: 200, beatStart: 10, beat: 16, ramp: 5, duration: 45, breath: "off", evolution: 40, clarity: 55, fadeOut: 15,
+      mix: { bin: 55, pad: 42, halo: 28, bass: 18, bell: 18, tex: 25 } },
+    creativite: { label: "Créativité", sub: "Thêta haut · 25 min", mood: "brume", textures: ["stream", "birds"], base: 160, beatStart: 10, beat: 7.5, ramp: 6, duration: 25, breath: "carre", evolution: 28, clarity: 62, fadeOut: 25,
+      mix: { bin: 55, pad: 50, halo: 42, bass: 22, bell: 40, tex: 30 } },
+    profondeur: { label: "Profondeur", sub: "Delta · 30 min", mood: "abysse", textures: ["wind", "summer-night"], base: 72, beatStart: 6, beat: 3.5, ramp: 10, duration: 30, breath: "relax", evolution: 55, clarity: 30, fadeOut: 40,
+      mix: { bin: 55, pad: 62, halo: 20, bass: 45, bell: 14, tex: 32 } }
+  };
+
+  // ============ État ============
+  const DEFAULT = Object.assign({ journey: "meditation", volume: 60, fadeIn: 15, breathFollow: true, gongs: true }, JSON.parse(JSON.stringify(JOURNEYS.meditation)));
+  delete DEFAULT.label; delete DEFAULT.sub;
+  let state = JSON.parse(JSON.stringify(DEFAULT));
+  try {
+    const saved = JSON.parse(localStorage.getItem("sb-state") || "null");
+    if (saved && typeof saved === "object") state = Object.assign(state, saved, { mix: Object.assign({}, state.mix, saved.mix || {}) });
+  } catch (e) {}
+  if (state.journey !== "custom" && !JOURNEYS[state.journey]) state.journey = "custom";
+  if (!MOODS[state.mood]) state.mood = DEFAULT.mood;
+  if (!Array.isArray(state.textures)) {
+    const old = { ocean: ["waves"], pluie: ["rain"], vent: ["wind"], aucune: [] }[state.texture];
+    state.textures = old || DEFAULT.textures.slice();
+  }
+  delete state.texture;
+  state.textures = state.textures.filter((k) => TEXTURES[k]);
+  if (!BREATHS[state.breath]) state.breath = DEFAULT.breath;
+  let saveTimer = null;
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { try { localStorage.setItem("sb-state", JSON.stringify(state)); } catch (e) {} }, 300);
+  }
+
+  // ============ Audio : chaîne globale ============
+  let ctx = null, G = null, S = null;
+
+  function makeIR(seconds) {
+    const sr = ctx.sampleRate, len = Math.floor(sr * seconds);
+    const buf = ctx.createBuffer(2, len, sr);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      let lp = 0;
+      for (let i = 0; i < len; i++) {
+        const t = i / len;
+        const a = 0.2 + 0.78 * t;            // la queue s'assombrit en vieillissant
+        lp += (1 - a) * ((Math.random() * 2 - 1) - lp);
+        const attack = Math.min(1, i / (sr * 0.03));
+        d[i] = lp * Math.pow(1 - t, 2.4) * attack * (1 + a * 2);
+      }
+    }
+    return buf;
+  }
+  function makeNoise(kind, seconds) {
+    const sr = ctx.sampleRate, len = Math.floor(sr * seconds);
+    const buf = ctx.createBuffer(2, len, sr);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      let b0 = 0, b1 = 0, b2 = 0, last = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        if (kind === "pink") {
+          b0 = 0.99765 * b0 + w * 0.099046; b1 = 0.963 * b1 + w * 0.2965164; b2 = 0.57 * b2 + w * 1.0526913;
+          d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.18;
+        } else {
+          last = (last + 0.02 * w) / 1.02;
+          d[i] = last * 3.2;
+        }
+      }
+    }
+    return buf;
+  }
+
+  function initAudio() {
+    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "playback" });
+    G = {};
+    G.master = ctx.createGain();
+    const shelf = ctx.createBiquadFilter();
+    shelf.type = "highshelf"; shelf.frequency.value = 7000; shelf.gain.value = -4;
+    const lim = ctx.createDynamicsCompressor();
+    lim.threshold.value = -10; lim.knee.value = 8; lim.ratio.value = 8; lim.attack.value = 0.005; lim.release.value = 0.25;
+    G.master.connect(shelf).connect(lim).connect(ctx.destination);
+
+    G.revIn = ctx.createGain();
+    const pre = ctx.createDelay(0.2); pre.delayTime.value = 0.035;
+    const conv = ctx.createConvolver(); conv.buffer = makeIR(6.5);
+    const revOut = ctx.createGain(); revOut.gain.value = 0.9;
+    G.revIn.connect(pre).connect(conv).connect(revOut).connect(G.master);
+
+    // Les gongs passent hors séance pour survivre à l'extinction.
+    G.gong = ctx.createGain(); G.gong.gain.value = 0.6;
+    G.gong.connect(G.master);
+    const gs = ctx.createGain(); gs.gain.value = 0.8; G.gong.connect(gs).connect(G.revIn);
+
+    const imag = new Float32Array([0, 1, 0.45, 0.22, 0.11, 0.055, 0.03, 0.015]);
+    G.warm = ctx.createPeriodicWave(new Float32Array(imag.length), imag);
+    setVolume();
+  }
+
+  function setVolume() {
+    if (!G) return;
+    const v = Math.pow(state.volume / 100, 2) * 0.95;
+    G.master.gain.setTargetAtTime(v, ctx.currentTime, 0.08);
+  }
+
+  // Petits utilitaires de nœuds
+  const gainNode = (v) => { const g = ctx.createGain(); g.gain.value = v; return g; };
+  const panNode = (p) => { const n = ctx.createStereoPanner(); n.pan.value = p; return n; };
+  const oscNode = (type, f) => { const o = ctx.createOscillator(); if (type === "warm") o.setPeriodicWave(G.warm); else o.type = type; o.frequency.value = f; return o; };
+  function lfo(rate, depth, param, list, t) {
+    const o = ctx.createOscillator(); o.frequency.value = rate;
+    const g = gainNode(depth);
+    o.connect(g).connect(param); o.start(t); list.push(o);
+    return g;
+  }
+  const levelOf = (k) => Math.pow(state.mix[k] / 100, 1.5) * MIX.find((m) => m.k === k).K;
+  const tonic = () => { let r = state.base; while (r < 110) r *= 2; while (r >= 220) r /= 2; return r; };
+  const cutoffOf = () => MOODS[state.mood].cutoff * Math.pow(2, (state.clarity - 50) / 30);
+
+  // ============ Séance ============
+  function buildSession() {
+    const t = ctx.currentTime + 0.06;
+    S = { t0: t, dur: state.duration * 60, srcs: [], layer: null, texNodes: {}, chordIdx: 0, melIdx: 3, ending: false, breathT0: 0, breathKey: "" };
+
+    S.dry = gainNode(0); S.send = gainNode(0);
+    S.dry.connect(G.master); S.send.connect(G.revIn);
+    [S.dry.gain, S.send.gain].forEach((p) => { p.setValueAtTime(0, t); p.linearRampToValueAtTime(1, t + state.fadeIn); });
+
+    S.bus = {};
+    MIX.forEach((m) => { S.bus[m.k] = gainNode(levelOf(m.k)); });
+    const toSend = (node, amt) => node.connect(gainNode(amt)).connect(S.send);
+
+    // Binaural : toujours sec, sans réverb, pour garder chaque oreille pure.
+    S.bus.bin.connect(S.dry);
+
+    // Nappe : somme → souffle → filtre respirant → chorus stéréo
+    S.padIn = gainNode(1);
+    S.breath = gainNode(1);
+    S.padFilter = ctx.createBiquadFilter();
+    S.padFilter.type = "lowpass"; S.padFilter.Q.value = 0.5; S.padFilter.frequency.value = cutoffOf();
+    S.filterLfo = lfo(0.045, cutoffOf() * 0.3, S.padFilter.frequency, S.srcs, t);
+    S.padIn.connect(S.breath).connect(S.padFilter);
+    S.padFilter.connect(gainNode(0.7)).connect(S.bus.pad);
+    [[0.017, 0.11, -0.75], [0.024, 0.15, 0.75]].forEach(([d, r, p]) => {
+      const dl = ctx.createDelay(0.1); dl.delayTime.value = d;
+      lfo(r, 0.0035, dl.delayTime, S.srcs, t);
+      S.padFilter.connect(dl).connect(gainNode(0.5)).connect(panNode(p)).connect(S.bus.pad);
+    });
+    S.bus.pad.connect(S.dry); toSend(S.bus.pad, 0.75);
+
+    // Halo : aigus diffus, presque entièrement dans la réverb
+    S.haloIn = S.bus.halo;
+    S.bus.halo.connect(gainNode(0.3)).connect(S.dry); toSend(S.bus.halo, 1.0);
+
+    // Basse
+    S.bassIn = ctx.createBiquadFilter(); S.bassIn.type = "lowpass"; S.bassIn.frequency.value = 320;
+    S.bassIn.connect(S.bus.bass);
+    S.bus.bass.connect(S.dry); toSend(S.bus.bass, 0.08);
+
+    // Carillons : sec + écho ping-pong + réverb
+    S.bus.bell.connect(gainNode(0.4)).connect(S.dry); toSend(S.bus.bell, 0.7);
+    const echoOut = gainNode(0.45);
+    const dL = ctx.createDelay(2), dR = ctx.createDelay(2);
+    dL.delayTime.value = 0.43; dR.delayTime.value = 0.65;
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600;
+    const fbA = gainNode(0.38), fbB = gainNode(0.38);
+    S.bus.bell.connect(dL);
+    dL.connect(panNode(-0.8)).connect(echoOut);
+    dL.connect(lp).connect(fbA).connect(dR);
+    dR.connect(panNode(0.8)).connect(echoOut);
+    dR.connect(fbB).connect(dL);
+    echoOut.connect(S.dry); toSend(echoOut, 0.4);
+
+    // Texture
+    S.bus.tex.connect(S.dry); toSend(S.bus.tex, 0.18);
+
+    // Oscillateurs binauraux
+    S.oscL = oscNode("sine", state.base); S.oscR = oscNode("sine", state.base + state.beatStart);
+    S.oscL.connect(panNode(-1)).connect(S.bus.bin);
+    S.oscR.connect(panNode(1)).connect(S.bus.bin);
+    S.oscL.start(t); S.oscR.start(t);
+    S.srcs.push(S.oscL, S.oscR);
+    S.beatFrom = state.beatStart; S.beatTo = state.beatStart; S.beatT0 = t; S.beatSec = 0.01;
+    scheduleBeat(state.beatStart, state.beat, state.ramp * 60, t);
+
+    S.layer = chordLayer(MOODS[state.mood].chords[0], t, 4);
+    S.nextChordAt = t + chordLength();
+    S.nextBellAt = t + Math.max(6, state.fadeIn * 0.6);
+    S.texNodes = {};
+    syncTextures(t);
+  }
+
+  function scheduleBeat(from, to, sec, t) {
+    sec = Math.max(0.05, sec);
+    S.beatFrom = from; S.beatTo = to; S.beatT0 = t; S.beatSec = sec;
+    const L = S.oscL.frequency, R = S.oscR.frequency;
+    L.cancelScheduledValues(t); L.setValueAtTime(L.value, t); L.linearRampToValueAtTime(state.base, t + 0.4);
+    R.cancelScheduledValues(t); R.setValueAtTime(R.value, t);
+    if (sec > 0.4) R.linearRampToValueAtTime(state.base + from, t + 0.4);
+    R.linearRampToValueAtTime(state.base + to, t + sec);
+  }
+  function currentBeat() {
+    if (!S) return state.beatStart;
+    const p = clamp((ctx.currentTime - S.beatT0) / S.beatSec, 0, 1);
+    return S.beatFrom + (S.beatTo - S.beatFrom) * p;
+  }
+  function retargetBeat() {
+    if (!S || S.ending) return;
+    const now = ctx.currentTime;
+    const remaining = S.beatT0 + S.beatSec - now;
+    scheduleBeat(currentBeat(), state.beat, Math.max(3, remaining), now);
+  }
+
+  const chordLength = () => state.evolution * rand(0.8, 1.25);
+
+  function chordLayer(chord, t, attack) {
+    const L = { srcs: [], outs: [] };
+    const r = tonic();
+    const offs = chord.o.slice().sort((a, b) => a - b);
+    const env = (dest, level) => {
+      const g = gainNode(0);
+      g.gain.setValueAtTime(0, t);
+      g.gain.setTargetAtTime(level, t, attack / 3);
+      g.connect(dest); L.outs.push(g);
+      return g;
+    };
+    const padOut = env(S.padIn, 1);
+    const haloOut = env(S.haloIn, 1);
+    const bassOut = env(S.bassIn, 1);
+    const spread = [-0.55, 0.45, -0.25, 0.6, -0.65];
+
+    offs.forEach((o, i) => {
+      const f = r * Math.pow(2, o / 12);
+      const ng = gainNode(i === 0 ? 0.06 : 0.05);
+      ng.connect(panNode(spread[i])).connect(padOut);
+      lfo(rand(0.025, 0.07), 0.016, ng.gain, L.srcs, t);              // respiration propre à la note
+      const drift = ctx.createOscillator(); drift.frequency.value = rand(0.05, 0.13);
+      const dUp = gainNode(rand(3, 6)), dDown = gainNode(-rand(3, 6));
+      drift.connect(dUp); drift.connect(dDown); drift.start(t); L.srcs.push(drift);
+      [-9, 0, 9].forEach((c, j) => {
+        const osc = oscNode("warm", f);
+        osc.detune.value = c + rand(-2, 2);
+        if (j === 0) dUp.connect(osc.detune);
+        if (j === 2) dDown.connect(osc.detune);
+        osc.connect(ng); osc.start(t); L.srcs.push(osc);
+      });
+    });
+
+    // Halo : deux notes hautes de l'accord, une octave et deux au-dessus, en sinus avec trémolo lent
+    [offs[offs.length - 1] + 12, offs[2] + 24, offs[1] + 24].forEach((o, i) => {
+      const f = r * Math.pow(2, o / 12);
+      if (f > 3500) return;
+      const g = gainNode(0.03);
+      lfo(rand(0.08, 0.2), 0.02, g.gain, L.srcs, t);
+      const osc = oscNode("sine", f);
+      osc.detune.value = rand(-4, 4);
+      osc.connect(g).connect(panNode([-0.7, 0.7, 0][i])).connect(haloOut);
+      osc.start(t); L.srcs.push(osc);
+    });
+
+    // Basse : fondamentale de l'accord entre 55 et 110 Hz
+    let fb = r * Math.pow(2, chord.o[0] / 12);
+    while (fb >= 110) fb /= 2;
+    while (fb < 55) fb *= 2;
+    const b1 = oscNode("sine", fb), b2 = oscNode("triangle", fb * 2);
+    b1.connect(gainNode(0.3)).connect(bassOut);
+    b2.connect(gainNode(0.04)).connect(bassOut);
+    b1.start(t); b2.start(t); L.srcs.push(b1, b2);
+
+    L.name = chord.n;
+    return L;
+  }
+
+  function releaseLayer(L, t, rel) {
+    L.outs.forEach((g) => { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.setTargetAtTime(0, t, rel / 4); });
+    L.srcs.forEach((s) => { try { s.stop(t + rel + 0.5); } catch (e) {} });
+  }
+
+  function changeChord(now, attack) {
+    const old = S.layer;
+    const chords = MOODS[state.mood].chords;
+    S.layer = chordLayer(chords[S.chordIdx % chords.length], now, attack);
+    if (old) releaseLayer(old, now, attack * 1.4);
+    renderReadout();
+  }
+
+  // ---- Carillons (FM) ----
+  function bell(t, f, vel, b, dest) {
+    const car = oscNode("sine", f), mod = oscNode("sine", f * b.ratio);
+    const mg = gainNode(0), amp = gainNode(0), pn = panNode(rand(-0.6, 0.6));
+    mg.gain.setValueAtTime(f * b.index * vel, t);
+    mg.gain.setTargetAtTime(0, t, b.decay * 0.12);
+    amp.gain.setValueAtTime(0, t);
+    amp.gain.linearRampToValueAtTime(0.15 * vel, t + 0.006);
+    amp.gain.setTargetAtTime(0, t + 0.006, b.decay * 0.27);
+    mod.connect(mg).connect(car.frequency);
+    car.connect(amp).connect(pn).connect(dest);
+    car.start(t); mod.start(t);
+    const end = t + b.decay * 1.7;
+    car.stop(end); mod.stop(end);
+  }
+  function bellPhrase(t) {
+    const m = MOODS[state.mood], sc = m.scale;
+    const n = Math.random() < 0.3 ? (Math.random() < 0.5 ? 2 : 3) : 1;
+    let tt = t;
+    for (let i = 0; i < n; i++) {
+      const step = [-2, -1, 1, 1, 2, 3, -3][Math.floor(Math.random() * 7)];
+      S.melIdx = clamp(S.melIdx + step, 0, sc.length - 1);
+      const f = tonic() * Math.pow(2, m.bell.oct + sc[S.melIdx] / 12);
+      bell(tt, f, rand(0.45, 1) * (i ? 0.8 : 1), m.bell, S.bus.bell);
+      tt += rand(0.3, 0.9);
+    }
+  }
+  const bellGap = () => MOODS[state.mood].bell.mean * (0.35 + Math.random() * 1.3);
+
+  function gong(t, vel) {
+    bell(t, tonic(), vel, { ratio: 1.41, index: 2.4, decay: 11 }, G.gong);
+    bell(t + 0.01, tonic() * 2.01, vel * 0.35, { ratio: 2.76, index: 1.2, decay: 7 }, G.gong);
+  }
+
+  // ---- Textures : enregistrements en boucle ----
+  const rawCache = {}, bufCache = {};
+  function prefetch(k) {
+    if (!rawCache[k]) rawCache[k] = fetch("sounds/" + k + ".mp4").then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
+    return rawCache[k];
+  }
+  function decode(ab) { return new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)); }
+  // Boucle sans couture : on retire les silences d'encodage et on fond la fin dans le début (fondu à puissance constante).
+  function loopify(buf) {
+    const sr = buf.sampleRate, trim = Math.floor(sr * 0.08);
+    const N = buf.length - 2 * trim, X = Math.min(Math.floor(sr * 2), Math.floor(N / 4));
+    const out = ctx.createBuffer(buf.numberOfChannels, N - X, sr);
+    for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+      const src = buf.getChannelData(ch), dst = out.getChannelData(ch);
+      for (let i = 0; i < N - X; i++) {
+        if (i < X) {
+          const k = i / X;
+          dst[i] = src[trim + i] * Math.sqrt(k) + src[trim + N - X + i] * Math.sqrt(1 - k);
+        } else dst[i] = src[trim + i];
+      }
+    }
+    return out;
+  }
+  function loadBuffer(k) {
+    if (!bufCache[k]) {
+      bufCache[k] = prefetch(k).then((ab) => decode(ab.slice(0))).then(loopify)
+        .catch((e) => { delete bufCache[k]; delete rawCache[k]; throw e; });
+    }
+    return bufCache[k];
+  }
+  const texShare = () => (state.textures.length > 1 ? 0.8 : 1);
+
+  function startTex(k) {
+    const node = { g: gainNode(0), src: null };
+    S.texNodes[k] = node;
+    node.g.connect(S.bus.tex);
+    loadBuffer(k).then((buf) => {
+      if (!S || S.texNodes[k] !== node) return;
+      const t = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      src.connect(node.g);
+      src.start(t, rand(0, buf.duration * 0.9));
+      node.src = src;
+      node.g.gain.setTargetAtTime(texShare(), t, 1.5);
+    }).catch(() => setStatus("Impossible de charger « " + TEXTURES[k].label + " »"));
+  }
+  function stopTex(k, t) {
+    const n = S.texNodes[k];
+    delete S.texNodes[k];
+    n.g.gain.cancelScheduledValues(t);
+    n.g.gain.setValueAtTime(n.g.gain.value, t);
+    n.g.gain.setTargetAtTime(0, t, 0.8);
+    if (n.src) { try { n.src.stop(t + 4); } catch (e) {} }
+  }
+  function syncTextures(t) {
+    if (!S) return;
+    const want = new Set(state.textures);
+    Object.keys(S.texNodes).forEach((k) => { if (!want.has(k)) stopTex(k, t); });
+    want.forEach((k) => { if (!S.texNodes[k]) startTex(k); });
+    Object.values(S.texNodes).forEach((n) => { if (n.src) n.g.gain.setTargetAtTime(texShare(), t, 1); });
+  }
+
+  // ---- Respiration ----
+  function breathCycle() { const p = BREATHS[state.breath].seq; return p ? p.reduce((a, s) => a + s[1], 0) : 0; }
+  function breathPhase(el) {
+    const seq = BREATHS[state.breath].seq;
+    if (!seq) return null;
+    const cyc = breathCycle();
+    const rel = el - S.breathT0;
+    let x = ((rel % cyc) + cyc) % cyc;
+    for (let i = 0; i < seq.length; i++) {
+      if (x < seq[i][1]) return { i, kind: seq[i][0], d: seq[i][1], x, n: Math.floor(rel / cyc) };
+      x -= seq[i][1];
+    }
+    return null;
+  }
+  function breathTick(el) {
+    const ph = state.breathFollow ? breathPhase(el) : null;
+    if (!ph) {
+      if (S.breathKey !== "flat") { S.breath.gain.setTargetAtTime(1, ctx.currentTime, 1); S.breathKey = "flat"; }
+      return;
+    }
+    const key = ph.n + ":" + ph.i;
+    if (key === S.breathKey) return;
+    S.breathKey = key;
+    const v = ph.kind === "in" ? 1.22 : ph.kind === "out" ? 0.8 : null;
+    if (v !== null) S.breath.gain.setTargetAtTime(v, ctx.currentTime, (ph.d - ph.x) / 3);
+  }
+
+  // ---- Chef d'orchestre ----
+  function conduct() {
+    if (!S || ctx.state !== "running") return;
+    const now = ctx.currentTime, el = now - S.t0;
+    if (!S.ending && el >= S.dur) endSession(true);
+    if (S.ending) return;
+    if (now >= S.nextChordAt) {
+      S.chordIdx++;
+      const len = chordLength();
+      changeChord(now, clamp(len * 0.35, 3, 12));
+      S.nextChordAt = now + len;
+    }
+    if (state.mix.bell > 0) {
+      while (S.nextBellAt < now + 0.3) { bellPhrase(Math.max(S.nextBellAt, now + 0.02)); S.nextBellAt += bellGap(); }
+    } else {
+      S.nextBellAt = Math.max(S.nextBellAt, now + 2);
+    }
+    breathTick(el);
+  }
+  setInterval(conduct, 100);
+
+  // ============ Cycle de vie ============
+  let wakeLock = null;
+  function requestWake() {
+    try { if (navigator.wakeLock) navigator.wakeLock.request("screen").then((l) => { wakeLock = l; }).catch(() => {}); } catch (e) {}
+  }
+  function releaseWake() { try { if (wakeLock) wakeLock.release(); } catch (e) {} wakeLock = null; }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && S && !S.ending && ctx.state === "running") requestWake();
+  });
+
+  function start() {
+    if (!ctx) initAudio();
+    if (ctx.state === "suspended") ctx.resume();
+    buildSession();
+    if (state.gongs) gong(ctx.currentTime + 0.15, 0.55);
+    requestWake();
+    setStatus("En cours · " + (state.journey === "custom" ? "séance personnalisée" : JOURNEYS[state.journey].label));
+    renderTransport();
+  }
+
+  function togglePause() {
+    if (!S || S.ending) return;
+    if (ctx.state === "running") { ctx.suspend(); releaseWake(); setStatus("En pause"); }
+    else { ctx.resume(); requestWake(); setStatus("En cours"); }
+    setTimeout(renderTransport, 50);
+  }
+
+  function endSession(natural) {
+    if (!S || S.ending) return;
+    if (ctx.state === "suspended") ctx.resume();
+    S.ending = true;
+    S.endedAt = Math.min(ctx.currentTime - S.t0, S.dur);
+    const now = ctx.currentTime;
+    const fo = natural ? state.fadeOut : Math.min(5, state.fadeOut);
+    [S.dry.gain, S.send.gain].forEach((p) => { p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); p.linearRampToValueAtTime(0, now + fo); });
+    if (natural && state.gongs) gong(now + 0.1, 0.8);
+    setStatus(natural ? "Fin de séance" : "Arrêt en douceur…");
+    S.teardownTimer = setTimeout(teardown, (fo + 0.3) * 1000);
+    renderTransport();
+  }
+
+  function teardown() {
+    if (!S) return;
+    clearTimeout(S.teardownTimer);
+    const now = ctx.currentTime;
+    S.srcs.forEach((s) => { try { s.stop(now); } catch (e) {} });
+    if (S.layer) S.layer.srcs.forEach((s) => { try { s.stop(now); } catch (e) {} });
+    Object.values(S.texNodes || {}).forEach((n) => { if (n.src) { try { n.src.stop(now); } catch (e) {} } });
+    try { S.dry.disconnect(); S.send.disconnect(); } catch (e) {}
+    recordStats(S.endedAt != null ? S.endedAt : ctx.currentTime - S.t0);
+    S = null;
+    releaseWake();
+    setStatus("Séance terminée");
+    renderTransport();
+    renderReadout();
+  }
+
+  function recordStats(seconds) {
+    if (seconds < 60) return;
+    try {
+      const st = JSON.parse(localStorage.getItem("sb-stats") || '{"n":0,"min":0}');
+      st.n += 1; st.min += Math.round(seconds / 60);
+      localStorage.setItem("sb-stats", JSON.stringify(st));
+    } catch (e) {}
+    renderStats();
+  }
+
+  // ============ Application des réglages en direct ============
+  function live() { return S && !S.ending; }
+  function setCustom() { if (state.journey !== "custom") { state.journey = "custom"; renderJourneys(); } }
+
+  function applyAllLive(prev) {
+    if (!live()) return;
+    const now = ctx.currentTime;
+    MIX.forEach((m) => S.bus[m.k].gain.setTargetAtTime(levelOf(m.k), now, 0.6));
+    if (prev.mood !== state.mood || prev.base !== state.base) { S.chordIdx = 0; changeChord(now, 5); S.nextChordAt = now + chordLength(); }
+    if (prev.textures.join() !== state.textures.join()) syncTextures(now);
+    if (prev.base !== state.base || prev.beat !== state.beat) retargetBeat();
+    if (prev.breath !== state.breath) S.breathT0 = now - S.t0;
+    S.padFilter.frequency.setTargetAtTime(cutoffOf(), now, 1);
+    S.filterLfo.gain.setTargetAtTime(cutoffOf() * 0.3, now, 1);
+    S.dur = Math.max(state.duration * 60, now - S.t0 + 5);
+  }
+
+  function update(changes, opts) {
+    const prev = JSON.parse(JSON.stringify(state));
+    Object.assign(state, changes);
+    if (!(opts && opts.journey)) setCustom();
+    applyAllLive(prev);
+    save();
+    renderAll();
+  }
+
+  // ============ Interface ============
+  function chip(label, sub, pressed, onClick, cls) {
+    const b = document.createElement("button");
+    b.className = cls || "chip";
+    b.setAttribute("aria-pressed", String(pressed));
+    b.innerHTML = cls === "journey" ? '<span class="n"></span><span class="s"></span>' : '<span class="n"></span><small></small>';
+    b.querySelector(".n").textContent = label;
+    const s = b.querySelector(cls === "journey" ? ".s" : "small");
+    if (sub) s.textContent = sub; else s.remove();
+    b.addEventListener("click", onClick);
+    return b;
+  }
+  function fill(el, nodes) { el.replaceChildren(...nodes); }
+
+  function renderJourneys() {
+    const nodes = Object.entries(JOURNEYS).map(([k, j]) => chip(j.label, j.sub, state.journey === k, () => applyJourney(k), "journey"));
+    fill($("journeys"), nodes);
+    $("journeyName").textContent = state.journey === "custom" ? "Séance personnalisée" : JOURNEYS[state.journey].label;
+  }
+  function applyJourney(k) {
+    const j = JSON.parse(JSON.stringify(JOURNEYS[k]));
+    delete j.label; delete j.sub;
+    update(Object.assign(j, { journey: k }), { journey: true });
+  }
+
+  function renderChips() {
+    fill($("moods"), Object.entries(MOODS).map(([k, m]) => chip(m.label, m.sub, state.mood === k, () => update({ mood: k }))));
+    const m = MOODS[state.mood];
+    $("moodHint").textContent = m.hint + " " + m.chords.map((c) => c.n).join(" → ");
+    fill($("textures"), Object.entries(TEXTURES).map(([k, t]) => chip(t.label, t.sub, state.textures.includes(k), () => {
+      const on = state.textures.includes(k);
+      if (!on) prefetch(k).catch(() => {});
+      update({ textures: on ? state.textures.filter((x) => x !== k) : state.textures.concat(k) });
+    })));
+    fill($("breaths"), Object.entries(BREATHS).map(([k, b]) => chip(b.label, b.sub, state.breath === k, () => update({ breath: k }))));
+    fill($("bands"), BANDS.map((b) => chip(b.label, fmt1(b.v) + " Hz", bandOf(state.beat) === b, () => update({ beat: b.v }))));
+    fill($("durations"), [10, 15, 20, 30, 45, 60].map((d) => chip(d + " min", null, state.duration === d, () => update({ duration: d }))));
+  }
+
+  function noteName(f) {
+    const names = ["Do", "Do♯", "Ré", "Mi♭", "Mi", "Fa", "Fa♯", "Sol", "La♭", "La", "Si♭", "Si"];
+    const midi = 69 + 12 * Math.log2(f / 440);
+    const m = Math.round(midi), cents = Math.round((midi - m) * 100);
+    const name = names[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 2);
+    return name + (cents ? (cents > 0 ? " +" : " −") + Math.abs(cents) + " cents" : " juste");
+  }
+
+  function renderFields() {
+    const set = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
+    set("volume", state.volume); $("volumeVal").textContent = state.volume;
+    set("clarity", state.clarity); $("clarityVal").textContent = Math.round(cutoffOf() / 10) * 10 + " Hz";
+    set("evolution", state.evolution); $("evolutionVal").textContent = "≈ " + state.evolution + " s";
+    set("base", state.base); $("baseVal").textContent = state.base + " Hz";
+    $("baseNote").textContent = "Tonique de l'harmonie : " + noteName(tonic()) + " (" + fmt1(tonic()) + " Hz)";
+    set("beat", state.beat); $("beatVal").textContent = fmt1(state.beat) + " Hz · " + bandOf(state.beat).label;
+    set("beatStart", state.beatStart); $("beatStartVal").textContent = fmt1(state.beatStart) + " Hz · " + bandOf(state.beatStart).label;
+    set("ramp", state.ramp); $("rampVal").textContent = state.ramp ? state.ramp + " min" : "immédiate";
+    set("fadeIn", state.fadeIn); $("fadeInVal").textContent = state.fadeIn + " s";
+    set("fadeOut", state.fadeOut); $("fadeOutVal").textContent = state.fadeOut + " s";
+    set("durationCustom", state.duration);
+    $("breathFollow").setAttribute("aria-pressed", String(state.breathFollow));
+    $("gongs").setAttribute("aria-pressed", String(state.gongs));
+    MIX.forEach((m) => { set("mix-" + m.k, state.mix[m.k]); $("mixv-" + m.k).textContent = state.mix[m.k]; });
+  }
+
+  function buildMixer() {
+    fill($("mixer"), MIX.map((m) => {
+      const row = document.createElement("div");
+      row.className = "mix-row";
+      row.innerHTML = '<label for="mix-' + m.k + '"></label><input type="range" id="mix-' + m.k + '" min="0" max="100" step="1"><b id="mixv-' + m.k + '"></b>';
+      row.querySelector("label").textContent = m.label;
+      row.querySelector("input").addEventListener("input", (e) => {
+        update({ mix: Object.assign({}, state.mix, { [m.k]: parseInt(e.target.value, 10) }) });
+      });
+      return row;
+    }));
+  }
+
+  function bindRange(id, key, parse) {
+    $(id).addEventListener("input", (e) => update({ [key]: parse(e.target.value) }));
+  }
+  bindRange("clarity", "clarity", (v) => parseInt(v, 10));
+  bindRange("evolution", "evolution", (v) => parseInt(v, 10));
+  bindRange("beat", "beat", parseFloat);
+  bindRange("beatStart", "beatStart", parseFloat);
+  bindRange("ramp", "ramp", (v) => parseInt(v, 10));
+  bindRange("fadeIn", "fadeIn", (v) => parseInt(v, 10));
+  bindRange("fadeOut", "fadeOut", (v) => parseInt(v, 10));
+  // La base retransposant l'harmonie, on n'applique qu'au relâchement.
+  $("base").addEventListener("input", (e) => { $("baseVal").textContent = e.target.value + " Hz"; });
+  $("base").addEventListener("change", (e) => update({ base: parseInt(e.target.value, 10) }));
+  $("volume").addEventListener("input", (e) => { state.volume = parseInt(e.target.value, 10); $("volumeVal").textContent = state.volume; setVolume(); save(); });
+  $("durationCustom").addEventListener("change", (e) => update({ duration: clamp(parseInt(e.target.value, 10) || 20, 1, 180) }));
+  $("breathFollow").addEventListener("click", () => update({ breathFollow: !state.breathFollow }));
+  $("gongs").addEventListener("click", () => update({ gongs: !state.gongs }));
+
+  $("playBtn").addEventListener("click", () => { if (!S) start(); else togglePause(); });
+  $("stopBtn").addEventListener("click", () => { if (!S) return; if (S.ending) teardown(); else endSession(false); });
+
+  function setStatus(txt) { $("status").textContent = txt; }
+
+  const PLAY = '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/>';
+  const PAUSE = '<rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/>';
+  function renderTransport() {
+    const running = S && !S.ending && ctx.state === "running";
+    $("playIcon").innerHTML = running ? PAUSE : PLAY;
+    $("playBtn").setAttribute("aria-label", !S ? "Démarrer la séance" : running ? "Mettre en pause" : "Reprendre");
+    $("stopBtn").hidden = !S;
+  }
+
+  function renderReadout() {
+    const b = currentBeat();
+    let txt = "<b>" + bandOf(b).label + " " + fmt1(b) + " Hz</b>";
+    if (S && Math.abs(b - S.beatTo) > 0.05) txt += " → " + fmt1(S.beatTo) + " Hz";
+    else if (!S && state.ramp && state.beatStart !== state.beat) txt += " → " + fmt1(state.beat) + " Hz";
+    txt += " · " + MOODS[state.mood].label;
+    if (S && S.layer) txt += " " + S.layer.name;
+    if (state.textures.length) txt += " · " + state.textures.map((k) => TEXTURES[k].label).join(" + ");
+    $("readout").innerHTML = txt;
+  }
+
+  function renderStats() {
+    let st = { n: 0, min: 0 };
+    try { st = JSON.parse(localStorage.getItem("sb-stats") || '{"n":0,"min":0}'); } catch (e) {}
+    if (!st.n) { $("stats").textContent = "Ta première séance t'attend."; return; }
+    const h = Math.floor(st.min / 60), m = st.min % 60;
+    $("stats").textContent = st.n + (st.n > 1 ? " séances" : " séance") + " · " + (h ? h + " h " + String(m).padStart(2, "0") : m + " min") + " de calme au total";
+  }
+
+  function renderAll() { renderJourneys(); renderChips(); renderFields(); renderReadout(); }
+
+  // ============ Orbe & minuteur ============
+  const canvas = $("orb"), g2 = canvas.getContext("2d");
+  const ring = $("ringFill"), CIRC = 2 * Math.PI * 48.5;
+  ring.style.strokeDasharray = CIRC; ring.style.strokeDashoffset = CIRC;
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let ripples = [], lastRipple = 0, lastReadout = 0;
+  const ease = (x) => 0.5 - 0.5 * Math.cos(Math.PI * clamp(x, 0, 1));
+
+  function sizeCanvas() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth;
+    canvas.width = w * dpr; canvas.height = w * dpr;
+    g2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", sizeCanvas);
+  sizeCanvas();
+
+  function fmtTime(s) { s = Math.max(0, Math.ceil(s)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+
+  function frame(ms) {
+    const w = canvas.clientWidth, c = w / 2, R = w * 0.33;
+    let scale, word = "Prêt", count = "";
+    const playing = S && ctx && ctx.state === "running";
+    const el = S ? ctx.currentTime - S.t0 : 0;
+
+    if (S) {
+      const ph = breathPhase(el);
+      if (S.ending) { scale = 0.3; word = "Fin"; }
+      else if (ph) {
+        const p = ph.x / ph.d;
+        scale = ph.kind === "in" ? ease(p) : ph.kind === "out" ? 1 - ease(p) : ph.kind === "hold" ? 1 : 0;
+        word = BREATH_WORDS[ph.kind];
+        count = String(Math.ceil(ph.d - ph.x));
+      } else {
+        scale = 0.5 + 0.12 * Math.sin(el * 2 * Math.PI / 12);
+        word = bandOf(currentBeat()).label;
+      }
+      if (!playing && !S.ending) word = "Pause";
+      const remaining = S.ending ? 0 : S.dur - el;
+      $("timer").textContent = fmtTime(remaining);
+      ring.style.strokeDashoffset = CIRC * (1 - clamp(el / S.dur, 0, 1));
+    } else {
+      scale = 0.45 + (reduce ? 0 : 0.05 * Math.sin(ms / 1000 * 2 * Math.PI / 10));
+      $("timer").textContent = fmtTime(state.duration * 60);
+      ring.style.strokeDashoffset = CIRC;
+    }
+    if (reduce && S && !S.ending && BREATHS[state.breath].seq) scale = 0.6;
+    $("breathWord").textContent = word;
+    $("breathCount").textContent = count;
+
+    const r = R * (0.62 + 0.38 * scale);
+    g2.clearRect(0, 0, w, w);
+
+    // Halo extérieur
+    let grd = g2.createRadialGradient(c, c, r * 0.6, c, c, r * 1.75);
+    grd.addColorStop(0, "rgba(216,195,152,0.20)");
+    grd.addColorStop(0.5, "rgba(121,163,182,0.08)");
+    grd.addColorStop(1, "rgba(121,163,182,0)");
+    g2.fillStyle = grd;
+    g2.beginPath(); g2.arc(c, c, r * 1.75, 0, Math.PI * 2); g2.fill();
+
+    // Ondes concentriques
+    if (playing && !reduce && ms - lastRipple > 5000) { ripples.push({ t: ms }); lastRipple = ms; }
+    ripples = ripples.filter((rp) => ms - rp.t < 9000);
+    ripples.forEach((rp) => {
+      const k = (ms - rp.t) / 9000;
+      g2.strokeStyle = "rgba(216,195,152," + (0.22 * (1 - k)) + ")";
+      g2.lineWidth = 1;
+      g2.beginPath(); g2.arc(c, c, r * (1 + k * 0.85), 0, Math.PI * 2); g2.stroke();
+    });
+
+    // Cœur
+    grd = g2.createRadialGradient(c - r * 0.25, c - r * 0.3, r * 0.05, c, c, r);
+    grd.addColorStop(0, "rgba(246,240,226,0.98)");
+    grd.addColorStop(0.55, "rgba(222,204,166,0.92)");
+    grd.addColorStop(1, "rgba(150,170,175,0.75)");
+    g2.fillStyle = grd;
+    g2.beginPath(); g2.arc(c, c, r, 0, Math.PI * 2); g2.fill();
+
+    if (ms - lastReadout > 500) { lastReadout = ms; if (S) renderReadout(); }
+    requestAnimationFrame(frame);
+  }
+
+  // ============ Démarrage ============
+  buildMixer();
+  renderAll();
+  renderStats();
+  renderTransport();
+  requestAnimationFrame(frame);
+  state.textures.forEach((k) => prefetch(k).catch(() => {}));
+})();
+</script>
+
+</body>
+</html>
