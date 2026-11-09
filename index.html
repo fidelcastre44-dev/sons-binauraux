@@ -470,7 +470,10 @@
   // ============ Séance ============
   function buildSession() {
     const t = ctx.currentTime + 0.06;
-    S = { t0: t, dur: state.duration * 60, srcs: [], layer: null, texNodes: {}, chordIdx: 0, melIdx: 3, leadIdx: 4, leadBusyUntil: 0, ending: false };
+    S = { t0: t, dur: state.duration * 60, srcs: [], layer: null, texNodes: {}, chordIdx: 0, melIdx: 3, leadBusyUntil: 0, ending: false,
+      motif: null, leadTurn: "q", leadCenter: 0, leadUnit: 1 };
+    S.motif = newMotif();
+    S.leadUnit = rand(0.85, 1.1) * (state.mood === "abysse" ? 1.3 : 1);
 
     S.dry = gainNode(0); S.send = gainNode(0);
     S.dry.connect(G.master); S.send.connect(G.revIn);
@@ -724,20 +727,136 @@
     Object.values(S.texNodes).forEach((n) => { if (n.src) n.g.gain.setTargetAtTime(texShare(), t, 1); });
   }
 
-  // ---- Voix lointaine ----
-  function leadPhrase(t) {
-    const L = LEADS[state.lead], m = MOODS[state.mood], sc = m.scale;
-    const n = 3 + Math.floor(Math.random() * 3);
+  // ---- Voix lointaine : composition ----
+  // Un motif (contour en degrés + rythme) est inventé en début de séance, puis transformé un peu après chaque
+  // paire question/réponse. Chaque phrase est « réalisée » sur l'accord en cours : notes d'appui dans l'accord,
+  // notes de passage dans la gamme, sommet tenu, fin en suspens (question) ou au repos (réponse).
+  const pc = (x) => ((x % 12) + 12) % 12;
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const RHYTHMS = [[1, 3, 1, 1, 1], [0.5, 2.5, 1, 1.5, 1], [1, 2, 1, 2, 1], [1.5, 0.5, 3, 1, 1], [1, 1, 2.5, 1, 1]];
+
+  function newMotif() {
+    const n = pick([4, 4, 5]);
+    const steps = [pick([2, 3, 3, 4])];                       // élan : un saut vers le haut
+    for (let i = 1; i < n - 1; i++) steps.push(Math.random() < 0.75 ? -1 : pick([1, -2]));   // puis on redescend par degrés
+    return { steps, rhythm: pick(RHYTHMS).slice(0, n) };
+  }
+
+  function mutateMotif(m) {
+    const st = m.steps.slice(), rh = m.rhythm.slice();
+    const op = pick(["tweak", "tweak", "leap", "rhythm", "grow", "shrink", "tail"]);
+    if (op === "tweak" && st.length > 1) {
+      const i = 1 + Math.floor(Math.random() * (st.length - 1));
+      st[i] = clamp(st[i] + pick([-1, 1]), -3, 3) || -1;
+    } else if (op === "leap") {
+      st[0] = clamp(st[0] + pick([-1, 1]), 2, 5);
+    } else if (op === "rhythm" && rh.length > 2) {
+      const i = Math.floor(Math.random() * (rh.length - 2));
+      [rh[i], rh[i + 1]] = [rh[i + 1], rh[i]];
+    } else if (op === "grow" && st.length < 5) {
+      st.push(-1); rh.splice(rh.length - 1, 0, pick([0.5, 1]));
+    } else if (op === "shrink" && st.length > 2) {
+      const i = 1 + Math.floor(Math.random() * (st.length - 1));
+      st.splice(i, 1); rh.splice(i, 1);
+    } else if (op === "tail") {
+      st[st.length - 1] = -st[st.length - 1];
+    }
+    return { steps: st, rhythm: rh };
+  }
+
+  function composePhrase(kind) {
+    const mood = MOODS[state.mood];
+    const chord = mood.chords[S.chordIdx % mood.chords.length].o;
+    const cpcs = chord.map(pc), root = pc(chord[0]);
+    const third = cpcs.find((x) => [3, 4].includes(pc(x - root)));
+    const pcs = new Set(mood.scale.map(pc).concat(cpcs));
+    const P = [];
+    for (let o = -7; o <= 17; o++) if (pcs.has(pc(o))) P.push(o);
+    const isChord = (o) => cpcs.includes(pc(o));
+    const nearest = (from, pred, dir) => {
+      let best = -1, bd = 1e9;
+      P.forEach((o, i) => {
+        if (!pred(o)) return;
+        if (dir < 0 && o > P[from]) return;
+        const d = Math.abs(o - P[from]);
+        if (d < bd) { bd = d; best = i; }
+      });
+      return best < 0 ? from : best;
+    };
+
+    const m = S.motif;
+    const steps = m.steps.slice();
+    let idx = nearest(P.findIndex((o) => o >= S.leadCenter), isChord, 0);
+    if (kind === "a") {
+      // La réponse varie la question : élan plus court, ou départ sur la note d'accord du dessous
+      if (Math.random() < 0.5) steps[0] = Math.max(1, steps[0] - 1);
+      else if (idx > 0) idx = nearest(idx - 1, isChord, -1);
+    }
+    const idxs = [idx];
+    steps.forEach((st) => {
+      idx = clamp(idx + st, 0, P.length - 1);
+      while (idx > 0 && P[idx] - P[idxs[idxs.length - 1]] > 9) idx--;       // élan limité à la sixte
+      while (idx < P.length - 1 && P[idxs[idxs.length - 1]] - P[idx] > 7) idx++;  // descente limitée à la quinte
+      idxs.push(idx);
+    });
+
+    // Fin : la question reste en suspens (quinte, seconde/neuvième, ou autre note d'accord),
+    // la réponse se pose sur la fondamentale (ou la tierce), en descendant. On cherche près de la note
+    // où la phrase allait d'elle-même, pour ne pas casser la ligne.
+    const last = idxs.length - 1, raw = P[idxs[last]], prevO = P[idxs[last - 1]];
+    const score = (o) => {
+      if (o === prevO) return 1e9;
+      let sc = Math.abs(o - raw);
+      if (kind === "q") {
+        if (!isChord(o) || pc(o) === root) return 1e9;
+        if (![7, 2].includes(pc(o - root))) sc += 2;
+      } else {
+        if (pc(o) === root) sc += 0;
+        else if (third != null && pc(o) === third) sc += 2.5;
+        else return 1e9;
+        if (o > prevO) sc += 8;                                   // une réponse se pose en descendant
+        if (S.lastQFinal != null && pc(o) === pc(S.lastQFinal)) sc += 3;
+      }
+      return sc;
+    };
+    let end = -1, best = 1e9;
+    P.forEach((o, k) => { const sc = score(o); if (sc < best) { best = sc; end = k; } });
+    if (end >= 0 && best < 1e8) idxs[last] = end;
+    if (kind === "q") S.lastQFinal = P[idxs[last]];
+
+    // Durées : unité de la séance ; sommet tenu au moins 2 unités ; note finale longue
+    let peak = 0;
+    idxs.forEach((v, i) => { if (v > idxs[peak]) peak = i; });
+    const units = m.rhythm.slice(0, idxs.length);
+    while (units.length < idxs.length) units.push(1);
+    if (peak !== last) units[peak] = Math.max(units[peak], 2);
+    units[last] = kind === "q" ? 3.5 : 5;
+
+    // Les notes tenues hors accord glissent sur la note d'accord voisine
+    idxs.forEach((v, i) => {
+      if (i === last || units[i] < 2 || isChord(P[v])) return;
+      const free = (k) => k >= 0 && k < P.length && isChord(P[k]) && k !== idxs[i - 1] && k !== idxs[i + 1];
+      if (free(v + 1)) idxs[i] = v + 1;
+      else if (free(v - 1)) idxs[i] = v - 1;
+    });
+    // Pas de note répétée : on décale d'un degré dans le sens du contour
+    for (let i = 1; i < idxs.length; i++) {
+      if (idxs[i] === idxs[i - 1]) idxs[i] = clamp(idxs[i] + ((steps[i - 1] || -1) > 0 ? 1 : -1), 0, P.length - 1);
+    }
+
+    return idxs.map((v, i) => ({ off: P[v], u: units[i], peak: i === peak, last: i === last }));
+  }
+
+  function leadPhrase(t, kind) {
+    const L = LEADS[state.lead];
+    const plan = composePhrase(kind);
     const notes = [];
     let tt = 0;
-    for (let i = 0; i < n; i++) {
-      const step = i === 0 ? 0 : [-2, -1, -1, 1, 1, 2, 3, -3][Math.floor(Math.random() * 8)];
-      S.leadIdx = clamp(S.leadIdx + step, 0, sc.length - 1);
-      const last = i === n - 1;
-      const d = last ? rand(4.5, 7.5) : rand(1.6, 3.6);
-      notes.push({ f: tonic() * Math.pow(2, L.oct + sc[S.leadIdx] / 12), at: tt, d });
+    plan.forEach((nt) => {
+      const d = nt.u * S.leadUnit;
+      notes.push({ f: tonic() * Math.pow(2, L.oct + nt.off / 12), at: tt, d, peak: nt.peak });
       tt += d;
-    }
+    });
     const total = tt, end = t + total;
     const atk = state.lead === "theremine" ? 1.4 : 0.9, rel = 3.5;
     const srcs = [];
@@ -772,9 +891,10 @@
         pitch.offset.setTargetAtTime(nt.f, on + 0.03, 0.09);
       }
       vibDepth.gain.setTargetAtTime(0, on, 0.05);
-      vibDepth.gain.setTargetAtTime(vibCents, on + L.vib.delay, 0.5);
-      swell.gain.setTargetAtTime(1, on, 0.25);
-      swell.gain.setTargetAtTime(0.72, on + Math.min(1.2, nt.d * 0.5), nt.d * 0.4);
+      if (nt.d >= 1.6) vibDepth.gain.setTargetAtTime(vibCents * (nt.peak ? 1.25 : 1), on + Math.min(L.vib.delay, nt.d * 0.4), 0.5);
+      const top = nt.peak ? 1 : 0.82;
+      swell.gain.setTargetAtTime(top, on, 0.25);
+      swell.gain.setTargetAtTime(top * 0.75, on + Math.min(1.2, nt.d * 0.5), nt.d * 0.4);
     });
     swell.connect(amp);
 
@@ -848,9 +968,24 @@
       S.nextBellAt = Math.max(S.nextBellAt, now + 2);
     }
     if (state.mix.lead > 0 && now >= S.nextLeadAt && now >= S.leadBusyUntil) {
-      const len = leadPhrase(now + 0.05);
-      S.leadBusyUntil = now + len;
-      S.nextLeadAt = now + len + leadGapOf(state.leadRate) * rand(0.6, 1.4);
+      // Une question démarre juste après un changement d'accord si le prochain est imminent
+      const untilChord = S.nextChordAt - now;
+      if (S.leadTurn === "q" && state.evolution >= 22 && untilChord > 0 && untilChord < 14) {
+        S.nextLeadAt = S.nextChordAt + 1.5;
+      } else {
+        const kind = S.leadTurn;
+        const len = leadPhrase(now + 0.05, kind);
+        S.leadBusyUntil = now + len;
+        if (kind === "q") {
+          S.leadTurn = "a";
+          S.nextLeadAt = now + len + Math.max(2.5, leadGapOf(state.leadRate) * 0.25);
+        } else {
+          S.leadTurn = "q";
+          S.motif = mutateMotif(S.motif);
+          if (Math.random() < 0.35) S.leadCenter = clamp(S.leadCenter + pick([-3, -2, 2, 3]), -4, 7);
+          S.nextLeadAt = now + len + leadGapOf(state.leadRate) * rand(0.7, 1.3);
+        }
+      }
     } else if (state.mix.lead === 0) {
       S.nextLeadAt = Math.max(S.nextLeadAt, now + 5);
     }
