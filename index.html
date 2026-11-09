@@ -124,24 +124,6 @@
   .status { font-size: 0.78rem; color: var(--mist); min-height: 1.2em; }
 
   /* --- Voyages --- */
-  .journeys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin-top: 14px; }
-  .journey {
-    text-align: left;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--deep);
-    cursor: pointer;
-    min-height: 58px;
-    display: grid; align-content: center; gap: 1px;
-  }
-  .journey .n { font-family: var(--display); font-size: 1.1rem; overflow-wrap: anywhere; font-weight: 500; line-height: 1.1; }
-  .journey .s { font-size: 0.7rem; color: var(--mist); }
-  .journey[aria-pressed="true"] { border-color: var(--moon); background: var(--moon-soft); }
-  .journey[aria-pressed="true"] .n { color: var(--moon); }
-  .journey.custom { border-style: dashed; cursor: default; }
-  @media (max-width: 380px) { .journeys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
   /* --- Panneaux --- */
   .panels { display: grid; gap: 14px; min-width: 0; }
   .panel {
@@ -217,7 +199,7 @@
 <div class="wrap">
   <section class="stage" aria-label="Séance">
     <div class="brand">Sons binauraux</div>
-    <div class="journey-name" id="journeyName">Méditation</div>
+    <div class="journey-name">Thêta 4 Hz · La 432</div>
 
     <div class="orb">
       <canvas id="orb" aria-hidden="true"></canvas>
@@ -250,13 +232,12 @@
       <b id="volumeVal">60</b>
     </div>
 
-    <div class="journeys" id="journeys" role="group" aria-label="Voyages"></div>
   </section>
 
   <section class="panels">
     <div class="panel">
       <h2>Paysage sonore</h2>
-      <p class="lede">Une harmonie lente se construit sur la fréquence de base, avec des carillons qui apparaissent au hasard et des enregistrements de nature en fond.</p>
+      <p class="lede">Une harmonie lente accordée sur le La 432, des carillons et une voix lointaine qui apparaissent au hasard, et des enregistrements de nature en fond.</p>
 
       <div class="group-label">Harmonie</div>
       <div class="chips" id="moods" role="group" aria-label="Harmonie"></div>
@@ -275,44 +256,15 @@
         <input type="range" id="evolution" min="15" max="90" step="1" value="30">
       </div>
 
+      <div class="group-label">Voix lointaine</div>
+      <div class="chips" id="leadColors" role="group" aria-label="Couleur de la voix lointaine"></div>
+      <div class="field">
+        <div class="field-head"><label for="leadRate">Apparition</label><b id="leadRateVal"></b></div>
+        <input type="range" id="leadRate" min="0" max="100" step="1" value="45">
+      </div>
+
       <div class="group-label">Mélange</div>
       <div class="mixer" id="mixer"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Fréquences</h2>
-      <p class="lede">L'oreille gauche entend la base, la droite la base plus l'écart. La séance part de l'écart de départ et glisse vers la cible.</p>
-
-      <div class="field">
-        <div class="field-head"><label for="base">Fréquence de base</label><b id="baseVal"></b></div>
-        <input type="range" id="base" min="60" max="400" step="1" value="136">
-        <div class="hint" id="baseNote"></div>
-      </div>
-
-      <div class="field">
-        <div class="field-head"><label for="beat">Écart visé</label><b id="beatVal"></b></div>
-        <input type="range" id="beat" min="0.5" max="40" step="0.5" value="6">
-      </div>
-      <div class="chips" id="bands" role="group" aria-label="Bandes"></div>
-
-      <div class="field">
-        <div class="field-head"><label for="beatStart">Écart de départ</label><b id="beatStartVal"></b></div>
-        <input type="range" id="beatStart" min="0.5" max="40" step="0.5" value="10">
-      </div>
-      <div class="field">
-        <div class="field-head"><label for="ramp">Durée de la transition</label><b id="rampVal"></b></div>
-        <input type="range" id="ramp" min="0" max="20" step="1" value="8">
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2>Respiration</h2>
-      <p class="lede">L'orbe guide le souffle. La nappe peut gonfler à l'inspiration et se retirer à l'expiration.</p>
-      <div class="chips" id="breaths" role="group" aria-label="Rythme respiratoire"></div>
-      <div class="switch-row">
-        <span>La nappe suit le souffle<small>Variation douce du volume de la nappe</small></span>
-        <button class="toggle" id="breathFollow" aria-pressed="true" aria-label="La nappe suit le souffle"></button>
-      </div>
     </div>
 
     <div class="panel">
@@ -338,7 +290,7 @@
     </div>
 
     <div class="note">
-      <strong>Au casque.</strong> L'effet binaural demande un son séparé pour chaque oreille ; la nappe et les textures fonctionnent aussi sur enceintes.
+      <strong>Au casque.</strong> 108 Hz dans l'oreille gauche, 112 Hz dans la droite : le cerveau perçoit un battement de 4 Hz, la fréquence utilisée par Campbell et Monroe. Sur enceintes, seul le paysage sonore fonctionne.
       Sur iPhone, le son continue écran verrouillé et se pilote depuis l'écran de verrouillage ; si ce n'est pas le cas sur ta version d'iOS, garde l'écran allumé.
       Pratique de relaxation sans effet médical garanti. Pas en conduisant ni pendant une activité qui demande de la vigilance.
     </div>
@@ -398,23 +350,16 @@
     fireplace: { label: "Feu de bois", sub: "crépitements" }
   };
 
-  const BREATHS = {
-    off: { label: "Libre", sub: "sans guide", seq: null },
-    coherence: { label: "Cohérence", sub: "5,5 · 5,5", seq: [["in", 5.5], ["out", 5.5]] },
-    relax: { label: "Apaisement", sub: "4 · 6", seq: [["in", 4], ["out", 6]] },
-    carre: { label: "Carré", sub: "4 · 4 · 4 · 4", seq: [["in", 4], ["hold", 4], ["out", 4], ["rest", 4]] },
-    sommeil: { label: "4-7-8", sub: "endormissement", seq: [["in", 4], ["hold", 7], ["out", 8]] }
-  };
-  const BREATH_WORDS = { in: "Inspire", hold: "Retiens", out: "Expire", rest: "Pause" };
+  // Porteuse fixe : le La (accord 432 Hz) le plus proche de 100 Hz, écart de 4 Hz.
+  const BASE = 108, BEAT = 4;
 
-  const BANDS = [
-    { label: "Delta", sub: "sommeil", v: 2.5, max: 4 },
-    { label: "Thêta", sub: "méditation", v: 6, max: 8 },
-    { label: "Alpha", sub: "détente", v: 10, max: 13 },
-    { label: "Bêta", sub: "attention", v: 16, max: 30 },
-    { label: "Gamma", sub: "éveil", v: 40, max: 99 }
-  ];
-  const bandOf = (b) => BANDS.find((x) => b < x.max) || BANDS[4];
+  // Voix lointaine : trois couleurs de lead, réglages de synthèse par couleur.
+  const LEADS = {
+    cuivre: { label: "Cuivré", sub: "façon CS-80", oct: 1, glide: 0.22, scoop: -70, vib: { rate: 5.2, depth: 16, delay: 0.9 } },
+    theremine: { label: "Thérémine", sub: "sinus glissé", oct: 2, glide: 0.45, scoop: 0, vib: { rate: 6.2, depth: 28, delay: 0.35 } },
+    analogique: { label: "Analogique", sub: "dent de scie filtrée", oct: 1, glide: 0.07, scoop: 0, vib: { rate: 4.6, depth: 8, delay: 1.4 } }
+  };
+  const leadGapOf = (rate) => 150 * Math.pow(18 / 150, rate / 100);   // de ~2 min 30 à ~18 s entre deux phrases
 
   const MIX = [
     { k: "bin", label: "Binaural", K: 0.42 },
@@ -422,45 +367,31 @@
     { k: "halo", label: "Halo", K: 0.9 },
     { k: "bass", label: "Basse", K: 0.85 },
     { k: "bell", label: "Carillons", K: 0.75 },
+    { k: "lead", label: "Voix", K: 4.2 },
     { k: "tex", label: "Nature", K: 1.6 }
   ];
 
-  const JOURNEYS = {
-    sommeil: { label: "Sommeil", sub: "Delta · 45 min", mood: "nuit", textures: ["rain"], base: 90, beatStart: 8, beat: 2.5, ramp: 15, duration: 45, breath: "sommeil", evolution: 50, clarity: 35, fadeOut: 60,
-      mix: { bin: 50, pad: 60, halo: 22, bass: 35, bell: 12, tex: 40 } },
-    meditation: { label: "Méditation", sub: "Thêta · 20 min", mood: "brume", textures: ["waves"], base: 136, beatStart: 10, beat: 6, ramp: 8, duration: 20, breath: "coherence", evolution: 32, clarity: 50, fadeOut: 25,
-      mix: { bin: 60, pad: 55, halo: 35, bass: 30, bell: 30, tex: 30 } },
-    detente: { label: "Détente", sub: "Alpha · 15 min", mood: "aube", textures: ["waves", "birds"], base: 110, beatStart: 12, beat: 10, ramp: 4, duration: 15, breath: "relax", evolution: 26, clarity: 60, fadeOut: 20,
-      mix: { bin: 60, pad: 55, halo: 40, bass: 25, bell: 38, tex: 35 } },
-    focus: { label: "Focus", sub: "Bêta · 45 min", mood: "aube", textures: ["rain"], base: 200, beatStart: 10, beat: 16, ramp: 5, duration: 45, breath: "off", evolution: 40, clarity: 55, fadeOut: 15,
-      mix: { bin: 55, pad: 42, halo: 28, bass: 18, bell: 18, tex: 25 } },
-    creativite: { label: "Créativité", sub: "Thêta haut · 25 min", mood: "brume", textures: ["stream", "birds"], base: 160, beatStart: 10, beat: 7.5, ramp: 6, duration: 25, breath: "carre", evolution: 28, clarity: 62, fadeOut: 25,
-      mix: { bin: 55, pad: 50, halo: 42, bass: 22, bell: 40, tex: 30 } },
-    profondeur: { label: "Profondeur", sub: "Delta · 30 min", mood: "abysse", textures: ["wind", "summer-night"], base: 72, beatStart: 6, beat: 3.5, ramp: 10, duration: 30, breath: "relax", evolution: 55, clarity: 30, fadeOut: 40,
-      mix: { bin: 55, pad: 62, halo: 20, bass: 45, bell: 14, tex: 32 } }
-  };
-
   // ============ État ============
-  const DEFAULT = Object.assign({ journey: "meditation", volume: 60, fadeIn: 15, breathFollow: true, gongs: true }, JSON.parse(JSON.stringify(JOURNEYS.meditation)));
-  delete DEFAULT.label; delete DEFAULT.sub;
+  const DEFAULT = {
+    volume: 60, mood: "brume", textures: ["waves"], clarity: 50, evolution: 32,
+    duration: 20, fadeIn: 15, fadeOut: 25, gongs: true,
+    lead: "cuivre", leadRate: 45,
+    mix: { bin: 60, pad: 55, halo: 35, bass: 30, bell: 28, lead: 45, tex: 30 }
+  };
   let state = JSON.parse(JSON.stringify(DEFAULT));
   try {
-    const saved = JSON.parse(localStorage.getItem("sb-state") || "null");
+    const saved = JSON.parse(localStorage.getItem("sb2-state") || "null");
     if (saved && typeof saved === "object") state = Object.assign(state, saved, { mix: Object.assign({}, state.mix, saved.mix || {}) });
   } catch (e) {}
-  if (state.journey !== "custom" && !JOURNEYS[state.journey]) state.journey = "custom";
+  Object.keys(state).forEach((k) => { if (!(k in DEFAULT)) delete state[k]; });
   if (!MOODS[state.mood]) state.mood = DEFAULT.mood;
-  if (!Array.isArray(state.textures)) {
-    const old = { ocean: ["waves"], pluie: ["rain"], vent: ["wind"], aucune: [] }[state.texture];
-    state.textures = old || DEFAULT.textures.slice();
-  }
-  delete state.texture;
+  if (!LEADS[state.lead]) state.lead = DEFAULT.lead;
+  if (!Array.isArray(state.textures)) state.textures = DEFAULT.textures.slice();
   state.textures = state.textures.filter((k) => TEXTURES[k]);
-  if (!BREATHS[state.breath]) state.breath = DEFAULT.breath;
   let saveTimer = null;
   function save() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { try { localStorage.setItem("sb-state", JSON.stringify(state)); } catch (e) {} }, 300);
+    saveTimer = setTimeout(() => { try { localStorage.setItem("sb2-state", JSON.stringify(state)); } catch (e) {} }, 300);
   }
 
   // ============ Audio : chaîne globale ============
@@ -482,26 +413,6 @@
     }
     return buf;
   }
-  function makeNoise(kind, seconds) {
-    const sr = ctx.sampleRate, len = Math.floor(sr * seconds);
-    const buf = ctx.createBuffer(2, len, sr);
-    for (let ch = 0; ch < 2; ch++) {
-      const d = buf.getChannelData(ch);
-      let b0 = 0, b1 = 0, b2 = 0, last = 0;
-      for (let i = 0; i < len; i++) {
-        const w = Math.random() * 2 - 1;
-        if (kind === "pink") {
-          b0 = 0.99765 * b0 + w * 0.099046; b1 = 0.963 * b1 + w * 0.2965164; b2 = 0.57 * b2 + w * 1.0526913;
-          d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.18;
-        } else {
-          last = (last + 0.02 * w) / 1.02;
-          d[i] = last * 3.2;
-        }
-      }
-    }
-    return buf;
-  }
-
   function initAudio() {
     ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "playback" });
     G = {};
@@ -553,13 +464,13 @@
     return g;
   }
   const levelOf = (k) => Math.pow(state.mix[k] / 100, 1.5) * MIX.find((m) => m.k === k).K;
-  const tonic = () => { let r = state.base; while (r < 110) r *= 2; while (r >= 220) r /= 2; return r; };
+  const tonic = () => { let r = BASE; while (r < 110) r *= 2; while (r >= 220) r /= 2; return r; };
   const cutoffOf = () => MOODS[state.mood].cutoff * Math.pow(2, (state.clarity - 50) / 30);
 
   // ============ Séance ============
   function buildSession() {
     const t = ctx.currentTime + 0.06;
-    S = { t0: t, dur: state.duration * 60, srcs: [], layer: null, texNodes: {}, chordIdx: 0, melIdx: 3, ending: false, breathT0: 0, breathKey: "" };
+    S = { t0: t, dur: state.duration * 60, srcs: [], layer: null, texNodes: {}, chordIdx: 0, melIdx: 3, leadIdx: 4, leadBusyUntil: 0, ending: false };
 
     S.dry = gainNode(0); S.send = gainNode(0);
     S.dry.connect(G.master); S.send.connect(G.revIn);
@@ -574,11 +485,10 @@
 
     // Nappe : somme → souffle → filtre respirant → chorus stéréo
     S.padIn = gainNode(1);
-    S.breath = gainNode(1);
     S.padFilter = ctx.createBiquadFilter();
     S.padFilter.type = "lowpass"; S.padFilter.Q.value = 0.5; S.padFilter.frequency.value = cutoffOf();
     S.filterLfo = lfo(0.045, cutoffOf() * 0.3, S.padFilter.frequency, S.srcs, t);
-    S.padIn.connect(S.breath).connect(S.padFilter);
+    S.padIn.connect(S.padFilter);
     S.padFilter.connect(gainNode(0.7)).connect(S.bus.pad);
     [[0.017, 0.11, -0.75], [0.024, 0.15, 0.75]].forEach(([d, r, p]) => {
       const dl = ctx.createDelay(0.1); dl.delayTime.value = d;
@@ -610,44 +520,38 @@
     dR.connect(fbB).connect(dL);
     echoOut.connect(S.dry); toSend(echoOut, 0.4);
 
+    // Voix lointaine : filtre « distance », peu de son direct, longue réverb et écho stéréo lent
+    const far = ctx.createBiquadFilter(); far.type = "lowpass"; far.frequency.value = 3200; far.Q.value = 0.3;
+    S.bus.lead.connect(far);
+    far.connect(gainNode(0.28)).connect(S.dry); toSend(far, 1.1);
+    const lEcho = gainNode(0.5);
+    const eL = ctx.createDelay(3), eR = ctx.createDelay(3);
+    eL.delayTime.value = 0.86; eR.delayTime.value = 1.29;
+    const eLp = ctx.createBiquadFilter(); eLp.type = "lowpass"; eLp.frequency.value = 1800;
+    const efA = gainNode(0.46), efB = gainNode(0.46);
+    far.connect(eL);
+    eL.connect(panNode(-0.9)).connect(lEcho);
+    eL.connect(eLp).connect(efA).connect(eR);
+    eR.connect(panNode(0.9)).connect(lEcho);
+    eR.connect(efB).connect(eL);
+    lEcho.connect(gainNode(0.5)).connect(S.dry); toSend(lEcho, 0.9);
+
     // Texture
     S.bus.tex.connect(S.dry); toSend(S.bus.tex, 0.18);
 
     // Oscillateurs binauraux
-    S.oscL = oscNode("sine", state.base); S.oscR = oscNode("sine", state.base + state.beatStart);
+    S.oscL = oscNode("sine", BASE); S.oscR = oscNode("sine", BASE + BEAT);
     S.oscL.connect(panNode(-1)).connect(S.bus.bin);
     S.oscR.connect(panNode(1)).connect(S.bus.bin);
     S.oscL.start(t); S.oscR.start(t);
     S.srcs.push(S.oscL, S.oscR);
-    S.beatFrom = state.beatStart; S.beatTo = state.beatStart; S.beatT0 = t; S.beatSec = 0.01;
-    scheduleBeat(state.beatStart, state.beat, state.ramp * 60, t);
 
     S.layer = chordLayer(MOODS[state.mood].chords[0], t, 4);
     S.nextChordAt = t + chordLength();
     S.nextBellAt = t + Math.max(6, state.fadeIn * 0.6);
+    S.nextLeadAt = t + state.fadeIn + rand(8, 20);
     S.texNodes = {};
     syncTextures(t);
-  }
-
-  function scheduleBeat(from, to, sec, t) {
-    sec = Math.max(0.05, sec);
-    S.beatFrom = from; S.beatTo = to; S.beatT0 = t; S.beatSec = sec;
-    const L = S.oscL.frequency, R = S.oscR.frequency;
-    L.cancelScheduledValues(t); L.setValueAtTime(L.value, t); L.linearRampToValueAtTime(state.base, t + 0.4);
-    R.cancelScheduledValues(t); R.setValueAtTime(R.value, t);
-    if (sec > 0.4) R.linearRampToValueAtTime(state.base + from, t + 0.4);
-    R.linearRampToValueAtTime(state.base + to, t + sec);
-  }
-  function currentBeat() {
-    if (!S) return state.beatStart;
-    const p = clamp((ctx.currentTime - S.beatT0) / S.beatSec, 0, 1);
-    return S.beatFrom + (S.beatTo - S.beatFrom) * p;
-  }
-  function retargetBeat() {
-    if (!S || S.ending) return;
-    const now = ctx.currentTime;
-    const remaining = S.beatT0 + S.beatSec - now;
-    scheduleBeat(currentBeat(), state.beat, Math.max(3, remaining), now);
   }
 
   const chordLength = () => state.evolution * rand(0.8, 1.25);
@@ -820,31 +724,110 @@
     Object.values(S.texNodes).forEach((n) => { if (n.src) n.g.gain.setTargetAtTime(texShare(), t, 1); });
   }
 
-  // ---- Respiration ----
-  function breathCycle() { const p = BREATHS[state.breath].seq; return p ? p.reduce((a, s) => a + s[1], 0) : 0; }
-  function breathPhase(el) {
-    const seq = BREATHS[state.breath].seq;
-    if (!seq) return null;
-    const cyc = breathCycle();
-    const rel = el - S.breathT0;
-    let x = ((rel % cyc) + cyc) % cyc;
-    for (let i = 0; i < seq.length; i++) {
-      if (x < seq[i][1]) return { i, kind: seq[i][0], d: seq[i][1], x, n: Math.floor(rel / cyc) };
-      x -= seq[i][1];
+  // ---- Voix lointaine ----
+  function leadPhrase(t) {
+    const L = LEADS[state.lead], m = MOODS[state.mood], sc = m.scale;
+    const n = 3 + Math.floor(Math.random() * 3);
+    const notes = [];
+    let tt = 0;
+    for (let i = 0; i < n; i++) {
+      const step = i === 0 ? 0 : [-2, -1, -1, 1, 1, 2, 3, -3][Math.floor(Math.random() * 8)];
+      S.leadIdx = clamp(S.leadIdx + step, 0, sc.length - 1);
+      const last = i === n - 1;
+      const d = last ? rand(4.5, 7.5) : rand(1.6, 3.6);
+      notes.push({ f: tonic() * Math.pow(2, L.oct + sc[S.leadIdx] / 12), at: tt, d });
+      tt += d;
     }
-    return null;
-  }
-  function breathTick(el) {
-    const ph = state.breathFollow ? breathPhase(el) : null;
-    if (!ph) {
-      if (S.breathKey !== "flat") { S.breath.gain.setTargetAtTime(1, ctx.currentTime, 1); S.breathKey = "flat"; }
-      return;
+    const total = tt, end = t + total;
+    const atk = state.lead === "theremine" ? 1.4 : 0.9, rel = 3.5;
+    const srcs = [];
+
+    // Enveloppe générale de la phrase + déplacement lent dans l'espace stéréo
+    const amp = gainNode(0);
+    amp.gain.setValueAtTime(0, t);
+    amp.gain.setTargetAtTime(1, t, atk / 3);
+    amp.gain.setTargetAtTime(0, end - 0.5, rel / 3);
+    const p0 = rand(-0.75, 0.75), p1 = clamp(-p0 + rand(-0.25, 0.25), -0.85, 0.85);
+    const pan = panNode(p0);
+    pan.pan.setValueAtTime(p0, t);
+    pan.pan.linearRampToValueAtTime(p1, end + rel);
+    amp.connect(pan).connect(S.bus.lead);
+
+    // Hauteur : un paramètre partagé (fréquence de base de toutes les oscillations de la voix)
+    const pitch = ctx.createConstantSource();
+    pitch.offset.setValueAtTime(notes[0].f, t);
+    const vibOsc = ctx.createOscillator(); vibOsc.frequency.value = L.vib.rate;
+    const vibDepth = gainNode(0);
+    vibOsc.connect(vibDepth);
+    const vibCents = L.vib.depth;
+
+    // Accents par note : glissé vers la note, petite montée « scoop » pour le cuivré, vibrato qui arrive tard
+    const swell = gainNode(0.75);
+    notes.forEach((nt, i) => {
+      const on = t + nt.at;
+      if (i > 0) pitch.offset.setTargetAtTime(nt.f, on, L.glide / 3);
+      if (L.scoop) {
+        const low = nt.f * Math.pow(2, L.scoop / 1200);
+        pitch.offset.setTargetAtTime(low, on, 0.01);
+        pitch.offset.setTargetAtTime(nt.f, on + 0.03, 0.09);
+      }
+      vibDepth.gain.setTargetAtTime(0, on, 0.05);
+      vibDepth.gain.setTargetAtTime(vibCents, on + L.vib.delay, 0.5);
+      swell.gain.setTargetAtTime(1, on, 0.25);
+      swell.gain.setTargetAtTime(0.72, on + Math.min(1.2, nt.d * 0.5), nt.d * 0.4);
+    });
+    swell.connect(amp);
+
+    const voice = (type, mult, detune, level, dest) => {
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.frequency.value = 0;
+      pitch.connect(o.frequency);
+      const mg = gainNode(mult - 1);       // multiplication d'octave via une 2e connexion
+      if (mult !== 1) pitch.connect(mg).connect(o.frequency);
+      o.detune.value = detune;
+      vibDepth.connect(o.detune);
+      o.connect(gainNode(level)).connect(dest);
+      srcs.push(o);
+      return o;
+    };
+
+    if (state.lead === "cuivre") {
+      // Deux dents de scie désaccordées, filtre qui s'ouvre avec le souffle du jeu
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 1.6;
+      f.frequency.setValueAtTime(500, t);
+      notes.forEach((nt) => {
+        const on = t + nt.at;
+        f.frequency.setTargetAtTime(Math.min(2600, nt.f * 4.2), on, 0.22);
+        f.frequency.setTargetAtTime(Math.min(1500, nt.f * 2.4), on + 0.6, nt.d * 0.35);
+      });
+      f.connect(swell);
+      voice("sawtooth", 1, -6, 0.05, f);
+      voice("sawtooth", 1, 7, 0.05, f);
+      voice("sine", 0.5, 0, 0.035, f);
+    } else if (state.lead === "theremine") {
+      // Sinus presque pur, une pointe d'harmonique pour la voix
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 3200;
+      f.connect(swell);
+      voice("sine", 1, 0, 0.062, f);
+      voice("triangle", 2, 3, 0.007, f);
+    } else {
+      // Dent de scie + carré une octave en dessous, filtre résonant qui balaie lentement
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 5;
+      f.frequency.setValueAtTime(700, t);
+      f.frequency.linearRampToValueAtTime(rand(1300, 2000), t + total * 0.55);
+      f.frequency.linearRampToValueAtTime(650, end + rel);
+      f.connect(swell);
+      voice("sawtooth", 1, 0, 0.076, f);
+      voice("square", 0.5, 4, 0.028, f);
     }
-    const key = ph.n + ":" + ph.i;
-    if (key === S.breathKey) return;
-    S.breathKey = key;
-    const v = ph.kind === "in" ? 1.22 : ph.kind === "out" ? 0.8 : null;
-    if (v !== null) S.breath.gain.setTargetAtTime(v, ctx.currentTime, (ph.d - ph.x) / 3);
+
+    const stopAt = end + rel + 1;
+    pitch.start(t); vibOsc.start(t);
+    srcs.forEach((o) => o.start(t));
+    [pitch, vibOsc].concat(srcs).forEach((o) => { try { o.stop(stopAt); } catch (e) {} });
+    S.leadSrcs = (S.leadSrcs || []).concat([pitch, vibOsc], srcs);
+    return total + rel;
   }
 
   // ---- Chef d'orchestre ----
@@ -864,7 +847,13 @@
     } else {
       S.nextBellAt = Math.max(S.nextBellAt, now + 2);
     }
-    breathTick(el);
+    if (state.mix.lead > 0 && now >= S.nextLeadAt && now >= S.leadBusyUntil) {
+      const len = leadPhrase(now + 0.05);
+      S.leadBusyUntil = now + len;
+      S.nextLeadAt = now + len + leadGapOf(state.leadRate) * rand(0.6, 1.4);
+    } else if (state.mix.lead === 0) {
+      S.nextLeadAt = Math.max(S.nextLeadAt, now + 5);
+    }
   }
   setInterval(conduct, 100);
 
@@ -909,8 +898,7 @@
   function updateMediaSession() {
     if (!("mediaSession" in navigator)) return;
     try {
-      const title = state.journey === "custom" ? "Séance personnalisée" : JOURNEYS[state.journey].label;
-      navigator.mediaSession.metadata = new MediaMetadata({ title: title, artist: "Sons binauraux", album: MOODS[state.mood].label });
+      navigator.mediaSession.metadata = new MediaMetadata({ title: "Séance 4 Hz · " + MOODS[state.mood].label, artist: "Sons binauraux", album: MOODS[state.mood].label });
       navigator.mediaSession.playbackState = !S ? "none" : (S.userPaused ? "paused" : "playing");
     } catch (e) {}
   }
@@ -929,7 +917,7 @@
     if (state.gongs) gong(ctx.currentTime + 0.15, 0.55);
     requestWake();
     updateMediaSession();
-    setStatus("En cours · " + (state.journey === "custom" ? "séance personnalisée" : JOURNEYS[state.journey].label));
+    setStatus("En cours");
     renderTransport();
   }
 
@@ -971,6 +959,7 @@
     const now = ctx.currentTime;
     S.srcs.forEach((s) => { try { s.stop(now); } catch (e) {} });
     if (S.layer) S.layer.srcs.forEach((s) => { try { s.stop(now); } catch (e) {} });
+    (S.leadSrcs || []).forEach((s) => { try { s.stop(now); } catch (e) {} });
     Object.values(S.texNodes || {}).forEach((n) => { if (n.src) { try { n.src.stop(now); } catch (e) {} } });
     try { S.dry.disconnect(); S.send.disconnect(); } catch (e) {}
     recordStats(S.endedAt != null ? S.endedAt : ctx.currentTime - S.t0);
@@ -995,25 +984,22 @@
 
   // ============ Application des réglages en direct ============
   function live() { return S && !S.ending; }
-  function setCustom() { if (state.journey !== "custom") { state.journey = "custom"; renderJourneys(); } }
 
   function applyAllLive(prev) {
     if (!live()) return;
     const now = ctx.currentTime;
     MIX.forEach((m) => S.bus[m.k].gain.setTargetAtTime(levelOf(m.k), now, 0.6));
-    if (prev.mood !== state.mood || prev.base !== state.base) { S.chordIdx = 0; changeChord(now, 5); S.nextChordAt = now + chordLength(); }
+    if (prev.mood !== state.mood) { S.chordIdx = 0; changeChord(now, 5); S.nextChordAt = now + chordLength(); }
     if (prev.textures.join() !== state.textures.join()) syncTextures(now);
-    if (prev.base !== state.base || prev.beat !== state.beat) retargetBeat();
-    if (prev.breath !== state.breath) S.breathT0 = now - S.t0;
+    if (prev.leadRate !== state.leadRate && S.nextLeadAt > now + 1) S.nextLeadAt = Math.max(S.leadBusyUntil, now + leadGapOf(state.leadRate) * rand(0.3, 0.8));
     S.padFilter.frequency.setTargetAtTime(cutoffOf(), now, 1);
     S.filterLfo.gain.setTargetAtTime(cutoffOf() * 0.3, now, 1);
     S.dur = Math.max(state.duration * 60, now - S.t0 + 5);
   }
 
-  function update(changes, opts) {
+  function update(changes) {
     const prev = JSON.parse(JSON.stringify(state));
     Object.assign(state, changes);
-    if (!(opts && opts.journey)) setCustom();
     applyAllLive(prev);
     save();
     renderAll();
@@ -1033,17 +1019,6 @@
   }
   function fill(el, nodes) { el.replaceChildren(...nodes); }
 
-  function renderJourneys() {
-    const nodes = Object.entries(JOURNEYS).map(([k, j]) => chip(j.label, j.sub, state.journey === k, () => applyJourney(k), "journey"));
-    fill($("journeys"), nodes);
-    $("journeyName").textContent = state.journey === "custom" ? "Séance personnalisée" : JOURNEYS[state.journey].label;
-  }
-  function applyJourney(k) {
-    const j = JSON.parse(JSON.stringify(JOURNEYS[k]));
-    delete j.label; delete j.sub;
-    update(Object.assign(j, { journey: k }), { journey: true });
-  }
-
   function renderChips() {
     fill($("moods"), Object.entries(MOODS).map(([k, m]) => chip(m.label, m.sub, state.mood === k, () => update({ mood: k }))));
     const m = MOODS[state.mood];
@@ -1053,17 +1028,8 @@
       if (!on) prefetch(k).catch(() => {});
       update({ textures: on ? state.textures.filter((x) => x !== k) : state.textures.concat(k) });
     })));
-    fill($("breaths"), Object.entries(BREATHS).map(([k, b]) => chip(b.label, b.sub, state.breath === k, () => update({ breath: k }))));
-    fill($("bands"), BANDS.map((b) => chip(b.label, fmt1(b.v) + " Hz", bandOf(state.beat) === b, () => update({ beat: b.v }))));
-    fill($("durations"), [10, 15, 20, 30, 45, 60].map((d) => chip(d + " min", null, state.duration === d, () => update({ duration: d }))));
-  }
-
-  function noteName(f) {
-    const names = ["Do", "Do♯", "Ré", "Mi♭", "Mi", "Fa", "Fa♯", "Sol", "La♭", "La", "Si♭", "Si"];
-    const midi = 69 + 12 * Math.log2(f / 440);
-    const m = Math.round(midi), cents = Math.round((midi - m) * 100);
-    const name = names[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 2);
-    return name + (cents ? (cents > 0 ? " +" : " −") + Math.abs(cents) + " cents" : " juste");
+    fill($("leadColors"), Object.entries(LEADS).map(([k, l]) => chip(l.label, l.sub, state.lead === k, () => update({ lead: k }))));
+    fill($("durations"), [20, 30, 45, 60].map((d) => chip(d + " min", null, state.duration === d, () => update({ duration: d }))));
   }
 
   function renderFields() {
@@ -1071,15 +1037,12 @@
     set("volume", state.volume); $("volumeVal").textContent = state.volume;
     set("clarity", state.clarity); $("clarityVal").textContent = Math.round(cutoffOf() / 10) * 10 + " Hz";
     set("evolution", state.evolution); $("evolutionVal").textContent = "≈ " + state.evolution + " s";
-    set("base", state.base); $("baseVal").textContent = state.base + " Hz";
-    $("baseNote").textContent = "Tonique de l'harmonie : " + noteName(tonic()) + " (" + fmt1(tonic()) + " Hz)";
-    set("beat", state.beat); $("beatVal").textContent = fmt1(state.beat) + " Hz · " + bandOf(state.beat).label;
-    set("beatStart", state.beatStart); $("beatStartVal").textContent = fmt1(state.beatStart) + " Hz · " + bandOf(state.beatStart).label;
-    set("ramp", state.ramp); $("rampVal").textContent = state.ramp ? state.ramp + " min" : "immédiate";
+    set("leadRate", state.leadRate);
+    const gap = Math.round(leadGapOf(state.leadRate));
+    $("leadRateVal").textContent = "toutes les ≈ " + (gap >= 60 ? Math.floor(gap / 60) + " min " + String(gap % 60).padStart(2, "0") : gap + " s");
     set("fadeIn", state.fadeIn); $("fadeInVal").textContent = state.fadeIn + " s";
     set("fadeOut", state.fadeOut); $("fadeOutVal").textContent = state.fadeOut + " s";
     set("durationCustom", state.duration);
-    $("breathFollow").setAttribute("aria-pressed", String(state.breathFollow));
     $("gongs").setAttribute("aria-pressed", String(state.gongs));
     MIX.forEach((m) => { set("mix-" + m.k, state.mix[m.k]); $("mixv-" + m.k).textContent = state.mix[m.k]; });
   }
@@ -1102,17 +1065,11 @@
   }
   bindRange("clarity", "clarity", (v) => parseInt(v, 10));
   bindRange("evolution", "evolution", (v) => parseInt(v, 10));
-  bindRange("beat", "beat", parseFloat);
-  bindRange("beatStart", "beatStart", parseFloat);
-  bindRange("ramp", "ramp", (v) => parseInt(v, 10));
+  bindRange("leadRate", "leadRate", (v) => parseInt(v, 10));
   bindRange("fadeIn", "fadeIn", (v) => parseInt(v, 10));
   bindRange("fadeOut", "fadeOut", (v) => parseInt(v, 10));
-  // La base retransposant l'harmonie, on n'applique qu'au relâchement.
-  $("base").addEventListener("input", (e) => { $("baseVal").textContent = e.target.value + " Hz"; });
-  $("base").addEventListener("change", (e) => update({ base: parseInt(e.target.value, 10) }));
   $("volume").addEventListener("input", (e) => { state.volume = parseInt(e.target.value, 10); $("volumeVal").textContent = state.volume; setVolume(); save(); });
   $("durationCustom").addEventListener("change", (e) => update({ duration: clamp(parseInt(e.target.value, 10) || 20, 1, 180) }));
-  $("breathFollow").addEventListener("click", () => update({ breathFollow: !state.breathFollow }));
   $("gongs").addEventListener("click", () => update({ gongs: !state.gongs }));
 
   $("playBtn").addEventListener("click", () => { if (!S) start(); else togglePause(); });
@@ -1130,11 +1087,7 @@
   }
 
   function renderReadout() {
-    const b = currentBeat();
-    let txt = "<b>" + bandOf(b).label + " " + fmt1(b) + " Hz</b>";
-    if (S && Math.abs(b - S.beatTo) > 0.05) txt += " → " + fmt1(S.beatTo) + " Hz";
-    else if (!S && state.ramp && state.beatStart !== state.beat) txt += " → " + fmt1(state.beat) + " Hz";
-    txt += " · " + MOODS[state.mood].label;
+    let txt = "<b>4 Hz</b> · " + MOODS[state.mood].label;
     if (S && S.layer) txt += " " + S.layer.name;
     if (state.textures.length) txt += " · " + state.textures.map((k) => TEXTURES[k].label).join(" + ");
     $("readout").innerHTML = txt;
@@ -1148,7 +1101,7 @@
     $("stats").textContent = st.n + (st.n > 1 ? " séances" : " séance") + " · " + (h ? h + " h " + String(m).padStart(2, "0") : m + " min") + " de calme au total";
   }
 
-  function renderAll() { renderJourneys(); renderChips(); renderFields(); renderReadout(); }
+  function renderAll() { renderChips(); renderFields(); renderReadout(); }
 
   // ============ Orbe & minuteur ============
   const canvas = $("orb"), g2 = canvas.getContext("2d");
@@ -1156,7 +1109,6 @@
   ring.style.strokeDasharray = CIRC; ring.style.strokeDashoffset = CIRC;
   const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let ripples = [], lastRipple = 0, lastReadout = 0;
-  const ease = (x) => 0.5 - 0.5 * Math.cos(Math.PI * clamp(x, 0, 1));
 
   function sizeCanvas() {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1176,16 +1128,10 @@
     const el = S ? ctx.currentTime - S.t0 : 0;
 
     if (S) {
-      const ph = breathPhase(el);
       if (S.ending) { scale = 0.3; word = "Fin"; }
-      else if (ph) {
-        const p = ph.x / ph.d;
-        scale = ph.kind === "in" ? ease(p) : ph.kind === "out" ? 1 - ease(p) : ph.kind === "hold" ? 1 : 0;
-        word = BREATH_WORDS[ph.kind];
-        count = String(Math.ceil(ph.d - ph.x));
-      } else {
-        scale = 0.5 + 0.12 * Math.sin(el * 2 * Math.PI / 12);
-        word = bandOf(currentBeat()).label;
+      else {
+        scale = 0.5 + (reduce ? 0 : 0.12 * Math.sin(el * 2 * Math.PI / 14));
+        word = "4 Hz";
       }
       if (!playing && !S.ending) word = "Pause";
       const remaining = S.ending ? 0 : S.dur - el;
@@ -1196,7 +1142,6 @@
       $("timer").textContent = fmtTime(state.duration * 60);
       ring.style.strokeDashoffset = CIRC;
     }
-    if (reduce && S && !S.ending && BREATHS[state.breath].seq) scale = 0.6;
     $("breathWord").textContent = word;
     $("breathCount").textContent = count;
 

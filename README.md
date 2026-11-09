@@ -4,11 +4,11 @@ Outil de méditation dans le navigateur : sons binauraux avec transition progres
 
 ## Fonctionnalités
 
-- Six voyages prêts (Sommeil, Méditation, Détente, Focus, Créativité, Profondeur) : l'écart binaural glisse de la fréquence de départ vers la cible.
-- Quatre harmonies (Aube, Nuit, Brume, Abysse), accordées sur la fréquence de base.
-- Huit sons de nature en boucle sans couture : pluie, orage, vagues, ruisseau, vent, oiseaux, grillons, feu de bois.
-- Guide de respiration (cohérence cardiaque, 4-6, carré, 4-7-8), la nappe peut suivre le souffle.
-- Pause, extinction douce, gongs de début et de fin, réglages et statistiques gardés dans le navigateur.
+- Battement binaural fixe de 4 Hz, la fréquence utilisée par Tom Campbell et Bob Monroe : 108 Hz à gauche, 112 Hz à droite (le La en accord 432 Hz le plus proche de 100 Hz).
+- Quatre harmonies (Aube, Nuit, Brume, Abysse) accordées sur ce La : nappe, halo, basse et carillons génératifs.
+- Une voix lointaine en trois couleurs (cuivrée façon CS-80, thérémine, analogique filtrée), avec un réglage de fréquence d'apparition.
+- Huit sons de nature superposables, en boucle sans couture.
+- Séances de 20 min par défaut, extinction douce, gongs de début et de fin, lecture écran verrouillé.
 
 ## Lancer
 
